@@ -34,4 +34,4 @@ python shadyERP.py
 
 ## Tecnologias
 
-Python 3.x
+- Python 3.x
