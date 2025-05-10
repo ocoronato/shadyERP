@@ -19,6 +19,7 @@ export default function Clientes() {
   const [error, setError] = useState<string | null>(null)
   const [needsInitialization, setNeedsInitialization] = useState(false)
   const [showInitialize, setShowInitialize] = useState(false)
+  const [cpfSupported, setCpfSupported] = useState(false) // Estado para controlar se o campo CPF é suportado
   const { toast } = useToast()
 
   const verificarTabelas = async () => {
@@ -44,6 +45,11 @@ export default function Clientes() {
 
       const data = await getClientes()
       setClientes(data)
+
+      // Verificar se o primeiro cliente tem o campo CPF
+      if (data.length > 0) {
+        setCpfSupported("cpf" in data[0])
+      }
     } catch (error) {
       console.error("Erro ao carregar clientes:", error)
       setError("Não foi possível carregar a lista de clientes. Tente novamente.")
@@ -61,11 +67,15 @@ export default function Clientes() {
     carregarClientes()
   }, [])
 
-  const clientesFiltrados = clientes.filter(
-    (cliente) =>
-      cliente.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      cliente.email.toLowerCase().includes(busca.toLowerCase()),
-  )
+  // Atualizar a função de filtro para incluir o CPF apenas se for suportado
+  const clientesFiltrados = clientes.filter((cliente) => {
+    const termoBusca = busca.toLowerCase()
+    const matchNome = cliente.nome.toLowerCase().includes(termoBusca)
+    const matchEmail = cliente.email.toLowerCase().includes(termoBusca)
+    const matchCpf = cpfSupported && cliente.cpf ? cliente.cpf.toLowerCase().includes(termoBusca) : false
+
+    return matchNome || matchEmail || matchCpf
+  })
 
   const adicionarCliente = (novoCliente: Cliente) => {
     setClientes([...clientes, novoCliente])
@@ -203,6 +213,14 @@ export default function Clientes() {
           </div>
         </div>
 
+        {!cpfSupported && (
+          <Card className="p-4 mb-4 bg-yellow-50 border-yellow-200">
+            <p className="text-yellow-800 text-sm">
+              O campo CPF não está disponível no banco de dados. Execute o SQL para adicionar a coluna.
+            </p>
+          </Card>
+        )}
+
         {mostrarForm ? (
           <Card className="p-6 mb-6">
             <ClienteForm
@@ -239,6 +257,11 @@ export default function Clientes() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nome
                   </th>
+                  {cpfSupported && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      CPF
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
@@ -257,6 +280,9 @@ export default function Clientes() {
                 {clientesFiltrados.map((cliente) => (
                   <tr key={cliente.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{cliente.nome}</td>
+                    {cpfSupported && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.cpf}</td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.telefone}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.endereco}</td>
@@ -272,7 +298,7 @@ export default function Clientes() {
                 ))}
                 {clientesFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={cpfSupported ? 6 : 5} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum cliente encontrado
                     </td>
                   </tr>

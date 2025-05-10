@@ -100,6 +100,11 @@ export default function Vendas() {
     setVendaDetalhes(venda)
   }
 
+  const atualizarStatusVenda = (vendaAtualizada: Venda) => {
+    setVendas(vendas.map((v) => (v.id === vendaAtualizada.id ? vendaAtualizada : v)))
+    setVendaDetalhes(vendaAtualizada)
+  }
+
   const formatarPreco = (preco: number) => {
     return `R$ ${preco.toFixed(2).replace(".", ",")}`
   }
@@ -203,7 +208,11 @@ export default function Vendas() {
           </Card>
         ) : vendaDetalhes ? (
           <Card className="p-6 mb-6">
-            <VendaDetalhes venda={vendaDetalhes} onVoltar={() => setVendaDetalhes(null)} />
+            <VendaDetalhes
+              venda={vendaDetalhes}
+              onVoltar={() => setVendaDetalhes(null)}
+              onStatusUpdate={atualizarStatusVenda}
+            />
           </Card>
         ) : (
           <Card className="p-6 mb-6">
@@ -262,7 +271,9 @@ export default function Vendas() {
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             venda.status === "Concluída"
                               ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
+                              : venda.status === "Cancelada"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
                           {venda.status}

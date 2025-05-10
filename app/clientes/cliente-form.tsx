@@ -16,23 +16,31 @@ interface ClienteFormProps {
 }
 
 export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormProps) {
+  // Atualizar o estado inicial do formulário para incluir o campo CPF
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
+    cpf: "",
     telefone: "",
     endereco: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [cpfSupported, setCpfSupported] = useState(true) // Estado para controlar se o campo CPF é suportado
   const { toast } = useToast()
 
+  // Atualizar o useEffect para incluir o campo CPF quando estiver editando um cliente
   useEffect(() => {
     if (cliente) {
       setFormData({
         nome: cliente.nome || "",
         email: cliente.email || "",
+        cpf: cliente.cpf || "",
         telefone: cliente.telefone || "",
         endereco: cliente.endereco || "",
       })
+
+      // Verificar se o cliente tem o campo CPF
+      setCpfSupported("cpf" in cliente)
     }
   }, [cliente])
 
@@ -41,12 +49,13 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  // Atualizar a validação do formulário para incluir o CPF como obrigatório apenas se for suportado
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.nome || !formData.email) {
+    if (!formData.nome || !formData.email || (cpfSupported && !formData.cpf)) {
       toast({
         title: "Campos obrigatórios",
-        description: "Nome e email são obrigatórios!",
+        description: cpfSupported ? "Nome, email e CPF são obrigatórios!" : "Nome e email são obrigatórios!",
         variant: "destructive",
       })
       return
@@ -65,11 +74,21 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
         onSave(novoCliente)
       }
     } catch (error) {
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar o cliente.",
-        variant: "destructive",
-      })
+      // Se o erro for relacionado ao campo CPF, desabilitar o campo e tentar novamente
+      if (error.message && error.message.includes("cpf")) {
+        setCpfSupported(false)
+        toast({
+          title: "Campo CPF não suportado",
+          description: "O campo CPF não está disponível no banco de dados. Execute o SQL para adicionar a coluna.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar o cliente.",
+          variant: "destructive",
+        })
+      }
       console.error(error)
     } finally {
       setIsSubmitting(false)
@@ -80,6 +99,7 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
     <form onSubmit={handleSubmit}>
       <h2 className="text-lg font-medium mb-4">{cliente ? "Editar Cliente" : "Novo Cliente"}</h2>
 
+      {/* Adicionar o campo CPF no grid do formulário apenas se for suportado */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="space-y-2">
           <Label htmlFor="nome">Nome</Label>
@@ -92,6 +112,21 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
             required
           />
         </div>
+
+        {cpfSupported && (
+          <div className="space-y-2">
+            <Label htmlFor="cpf">CPF</Label>
+            <Input
+              id="cpf"
+              name="cpf"
+              type="text"
+              value={formData.cpf}
+              onChange={handleChange}
+              placeholder="000.000.000-00"
+              required
+            />
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -128,6 +163,14 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
           />
         </div>
       </div>
+
+      {!cpfSupported && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4">
+          <p className="text-sm">
+            O campo CPF não está disponível no banco de dados. Execute o SQL para adicionar a coluna.
+          </p>
+        </div>
+      )}
 
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>

@@ -1,13 +1,17 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { LucideArrowLeft, LucidePrinter } from "lucide-react"
-import { useEffect } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { LucideArrowLeft, LucidePrinter, LucideSave, LucideEdit } from "lucide-react"
+import { updateVendaStatus } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 
-export default function VendaDetalhes({ venda, onVoltar }) {
-  const formatarPreco = (preco) => {
-    return `R$ ${preco.toFixed(2).replace(".", ",")}`
-  }
+export default function VendaDetalhes({ venda, onVoltar, onStatusUpdate }) {
+  const [status, setStatus] = useState(venda.status)
+  const [editingStatus, setEditingStatus] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
 
   // Adicionar estilos de impressão quando o componente for montado
   useEffect(() => {
@@ -45,8 +49,40 @@ export default function VendaDetalhes({ venda, onVoltar }) {
     }
   }, [])
 
+  const formatarPreco = (preco) => {
+    return `R$ ${preco.toFixed(2).replace(".", ",")}`
+  }
+
   const imprimirVenda = () => {
     window.print()
+  }
+
+  const handleSaveStatus = async () => {
+    if (status === venda.status) {
+      setEditingStatus(false)
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      await updateVendaStatus(venda.id, status)
+      toast({
+        title: "Status atualizado",
+        description: "O status da venda foi atualizado com sucesso.",
+      })
+      // Atualizar a venda na lista
+      onStatusUpdate({ ...venda, status })
+      setEditingStatus(false)
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status da venda.",
+        variant: "destructive",
+      })
+      console.error("Erro ao atualizar status:", error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -58,9 +94,11 @@ export default function VendaDetalhes({ venda, onVoltar }) {
           </Button>
           <h2 className="text-lg font-medium">Detalhes da Venda #{venda.id}</h2>
         </div>
-        <Button variant="outline" size="sm" onClick={imprimirVenda}>
-          <LucidePrinter className="h-4 w-4 mr-2" /> Imprimir
-        </Button>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={imprimirVenda}>
+            <LucidePrinter className="h-4 w-4 mr-2" /> Imprimir
+          </Button>
+        </div>
       </div>
 
       <div className="print-section">
@@ -77,15 +115,40 @@ export default function VendaDetalhes({ venda, onVoltar }) {
           </div>
           <div>
             <p className="text-sm text-gray-500">Status</p>
-            <p>
-              <span
-                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  venda.status === "Concluída" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {venda.status}
-              </span>
-            </p>
+            {editingStatus ? (
+              <div className="flex items-center space-x-2 no-print">
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Concluída">Concluída</SelectItem>
+                    <SelectItem value="Cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={handleSaveStatus} disabled={isSaving}>
+                  {isSaving ? "Salvando..." : <LucideSave className="h-4 w-4" />}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <span
+                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    status === "Concluída"
+                      ? "bg-green-100 text-green-800"
+                      : status === "Cancelada"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {status}
+                </span>
+                <Button variant="ghost" size="sm" onClick={() => setEditingStatus(true)} className="no-print">
+                  <LucideEdit className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Total</p>

@@ -7,10 +7,12 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Tipos para as tabelas
+// Atualizar o tipo Cliente para tornar o campo CPF opcional
 export type Cliente = {
   id: number
   nome: string
   email: string
+  cpf?: string // Campo CPF opcional
   telefone: string
   endereco: string
   created_at?: string
@@ -113,7 +115,10 @@ export async function getClientes() {
 
 export async function addCliente(cliente: Omit<Cliente, "id">) {
   try {
-    const { data, error } = await supabase.from("clientes").insert([cliente]).select()
+    // Remover o campo cpf se ele não existir na tabela
+    const clienteData = { ...cliente }
+
+    const { data, error } = await supabase.from("clientes").insert([clienteData]).select()
 
     if (error) {
       console.error("Erro ao adicionar cliente:", error)
@@ -129,9 +134,30 @@ export async function addCliente(cliente: Omit<Cliente, "id">) {
 
 export async function updateCliente(id: number, cliente: Partial<Cliente>) {
   try {
-    const { data, error } = await supabase.from("clientes").update(cliente).eq("id", id).select()
+    // Remover o campo cpf se ele não existir na tabela
+    const clienteData = { ...cliente }
+
+    // Se o erro for relacionado ao campo cpf, remova-o e tente novamente
+    const { data, error } = await supabase.from("clientes").update(clienteData).eq("id", id).select()
 
     if (error) {
+      // Se o erro for relacionado ao campo cpf, remova-o e tente novamente
+      if (error.message.includes("cpf")) {
+        delete clienteData.cpf
+        const { data: dataWithoutCpf, error: errorWithoutCpf } = await supabase
+          .from("clientes")
+          .update(clienteData)
+          .eq("id", id)
+          .select()
+
+        if (errorWithoutCpf) {
+          console.error("Erro ao atualizar cliente (sem CPF):", errorWithoutCpf)
+          throw errorWithoutCpf
+        }
+
+        return dataWithoutCpf?.[0]
+      }
+
       console.error("Erro ao atualizar cliente:", error)
       throw error
     }
@@ -444,6 +470,23 @@ export async function addVenda(venda: Omit<Venda, "id">) {
     }
   } catch (error) {
     console.error("Erro ao adicionar venda:", error)
+    throw error
+  }
+}
+
+// Nova função para atualizar o status de uma venda
+export async function updateVendaStatus(id: number, status: string) {
+  try {
+    const { data, error } = await supabase.from("vendas").update({ status }).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar status da venda:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar status da venda:", error)
     throw error
   }
 }
