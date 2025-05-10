@@ -454,7 +454,7 @@ export async function getDashboardData() {
     // Buscar produtos mais vendidos
     const { data: itensMaisVendidos, error: errorItensMaisVendidos } = await supabase
       .from("itens_venda")
-      .select("produto, quantidade, precoUnitario")
+      .select("produto, quantidade, preco_unitario")
 
     if (errorItensMaisVendidos) {
       console.error("Erro ao buscar itens mais vendidos:", errorItensMaisVendidos)
@@ -472,7 +472,7 @@ export async function getDashboardData() {
             acc.push({
               produto: item.produto,
               quantidade: item.quantidade,
-              precoUnitario: item.precoUnitario,
+              precoUnitario: item.preco_unitario,
             })
           }
           return acc
