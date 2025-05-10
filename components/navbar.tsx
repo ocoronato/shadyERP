@@ -35,6 +35,12 @@ export default function Navbar() {
                   Clientes
                 </Link>
                 <Link
+                  href="/categorias"
+                  className="text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Categorias
+                </Link>
+                <Link
                   href="/produtos"
                   className="text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium"
                 >
@@ -80,6 +86,13 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               Clientes
+            </Link>
+            <Link
+              href="/categorias"
+              className="text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setIsOpen(false)}
+            >
+              Categorias
             </Link>
             <Link
               href="/produtos"

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { addProduto, updateProduto, type Produto } from "@/lib/supabase"
+import { addProduto, updateProduto, getCategorias, type Produto, type Categoria } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 
 interface ProdutoFormProps {
@@ -23,10 +23,30 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     preco: "",
     estoque: "",
   })
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  const categorias = ["Eletrônicos", "Periféricos", "Acessórios", "Móveis", "Outros"]
+  useEffect(() => {
+    async function carregarCategorias() {
+      try {
+        const data = await getCategorias()
+        setCategorias(data)
+      } catch (error) {
+        console.error("Erro ao carregar categorias:", error)
+        toast({
+          title: "Erro ao carregar categorias",
+          description: "Não foi possível carregar a lista de categorias.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    carregarCategorias()
+  }, [toast])
 
   useEffect(() => {
     if (produto) {
@@ -90,6 +110,10 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     }
   }
 
+  if (isLoading) {
+    return <div className="p-4 text-center">Carregando categorias...</div>
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <h2 className="text-lg font-medium mb-4">{produto ? "Editar Produto" : "Novo Produto"}</h2>
@@ -115,8 +139,8 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
             </SelectTrigger>
             <SelectContent>
               {categorias.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
+                <SelectItem key={cat.id} value={cat.nome}>
+                  {cat.nome}
                 </SelectItem>
               ))}
             </SelectContent>

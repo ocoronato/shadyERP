@@ -16,6 +16,13 @@ export type Cliente = {
   created_at?: string
 }
 
+export type Categoria = {
+  id: number
+  nome: string
+  descricao: string
+  created_at?: string
+}
+
 export type Produto = {
   id: number
   nome: string
@@ -25,7 +32,6 @@ export type Produto = {
   created_at?: string
 }
 
-// Atualizar o tipo ItemVenda para usar o nome correto da coluna
 export type ItemVenda = {
   id?: number
   venda_id?: number
@@ -63,12 +69,17 @@ export async function checkTablesExist() {
     const { error: itensVendaError } = await supabase.from("itens_venda").select("id").limit(1)
     const itensVendaExists = !itensVendaError
 
+    // Verificar se a tabela categorias existe
+    const { error: categoriasError } = await supabase.from("categorias").select("id").limit(1)
+    const categoriasExists = !categoriasError
+
     return {
       clientesExists,
       produtosExists,
       vendasExists,
       itensVendaExists,
-      allExist: clientesExists && produtosExists && vendasExists && itensVendaExists,
+      categoriasExists,
+      allExist: clientesExists && produtosExists && vendasExists && itensVendaExists && categoriasExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -77,6 +88,7 @@ export async function checkTablesExist() {
       produtosExists: false,
       vendasExists: false,
       itensVendaExists: false,
+      categoriasExists: false,
       allExist: false,
     }
   }
@@ -143,6 +155,87 @@ export async function deleteCliente(id: number) {
     return true
   } catch (error) {
     console.error("Erro ao excluir cliente:", error)
+    throw error
+  }
+}
+
+// Funções para categorias
+export async function getCategorias() {
+  try {
+    const { data, error } = await supabase.from("categorias").select("*").order("nome", { ascending: true })
+
+    if (error) {
+      console.error("Erro ao buscar categorias:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar categorias:", error)
+    return []
+  }
+}
+
+export async function addCategoria(categoria: Omit<Categoria, "id">) {
+  try {
+    const { data, error } = await supabase.from("categorias").insert([categoria]).select()
+
+    if (error) {
+      console.error("Erro ao adicionar categoria:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao adicionar categoria:", error)
+    throw error
+  }
+}
+
+export async function updateCategoria(id: number, categoria: Partial<Categoria>) {
+  try {
+    const { data, error } = await supabase.from("categorias").update(categoria).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar categoria:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar categoria:", error)
+    throw error
+  }
+}
+
+export async function deleteCategoria(id: number) {
+  try {
+    // Verificar se a categoria está sendo usada em algum produto
+    const { data: produtos, error: produtosError } = await supabase
+      .from("produtos")
+      .select("id")
+      .eq("categoria", id.toString())
+      .limit(1)
+
+    if (produtosError) {
+      console.error("Erro ao verificar uso da categoria:", produtosError)
+      throw produtosError
+    }
+
+    if (produtos && produtos.length > 0) {
+      throw new Error("Esta categoria não pode ser excluída porque está sendo usada em produtos.")
+    }
+
+    const { error } = await supabase.from("categorias").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir categoria:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir categoria:", error)
     throw error
   }
 }

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { LucideBarChart2, LucideUsers, LucidePackage, LucideShoppingCart } from "lucide-react"
+import { LucideBarChart2, LucideUsers, LucidePackage, LucideShoppingCart, LucideTag } from "lucide-react"
 
 export default function Home() {
   return (
@@ -11,7 +11,7 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <Link href="/dashboard" className="block">
             <div className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
               <div className="px-4 py-5 sm:p-6">
@@ -38,6 +38,22 @@ export default function Home() {
                   <div className="ml-5">
                     <h3 className="text-lg font-medium text-gray-900">Clientes</h3>
                     <p className="text-sm text-gray-500">Gerenciar clientes</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/categorias" className="block">
+            <div className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
+              <div className="px-4 py-5 sm:p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+                    <LucideTag className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="ml-5">
+                    <h3 className="text-lg font-medium text-gray-900">Categorias</h3>
+                    <p className="text-sm text-gray-500">Gerenciar categorias</p>
                   </div>
                 </div>
               </div>
