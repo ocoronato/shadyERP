@@ -15,23 +15,22 @@ Um simples sistema de ERP para gerenciamento de negocios.
 
 ## Funcionalidades
 
-- Controle de estoque.
-- Gestão de vendas.
-- Fazer pedidos.
+-Gestão de Clientes: Cadastro, edição e exclusão de clientes.
+
+-Gestão de Produtos: Controle completo do catálogo de produtos, incluindo preços e estoque.
+
+-Relatórios e Dashboards: Insights e análises para decisões informadas.
+
+-Gestão de funcionarios: cargos e permissões.
+
+-Gestão de vendas
 
 ## Instalação
 
-
-Instale as dependências: 
 ```
-pip install -r requirements.txt
-```
-
-Execute o aplicativo: 
-```
-python shadyERP.py
+git@github.com:ocoronato/shadyERP.git
 ```
 
 ## Tecnologias
 
-- Python 3.x
+- TypeScript
