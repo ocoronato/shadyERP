@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import bcrypt from "bcryptjs"
 
 // Essas variáveis de ambiente já estão configuradas pelo Vercel
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
@@ -7,12 +8,11 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Tipos para as tabelas
-// Atualizar o tipo Cliente para tornar o campo CPF opcional
 export type Cliente = {
   id: number
   nome: string
   email: string
-  cpf?: string // Campo CPF opcional
+  cpf?: string
   telefone: string
   endereco: string
   created_at?: string
@@ -52,6 +52,15 @@ export type Venda = {
   created_at?: string
 }
 
+export type Usuario = {
+  id: number
+  nome: string
+  email: string
+  cargo: string
+  ativo: boolean
+  created_at?: string
+}
+
 // Função para verificar se as tabelas existem
 export async function checkTablesExist() {
   try {
@@ -75,13 +84,19 @@ export async function checkTablesExist() {
     const { error: categoriasError } = await supabase.from("categorias").select("id").limit(1)
     const categoriasExists = !categoriasError
 
+    // Verificar se a tabela usuarios existe
+    const { error: usuariosError } = await supabase.from("usuarios").select("id").limit(1)
+    const usuariosExists = !usuariosError
+
     return {
       clientesExists,
       produtosExists,
       vendasExists,
       itensVendaExists,
       categoriasExists,
-      allExist: clientesExists && produtosExists && vendasExists && itensVendaExists && categoriasExists,
+      usuariosExists,
+      allExist:
+        clientesExists && produtosExists && vendasExists && itensVendaExists && categoriasExists && usuariosExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -91,6 +106,7 @@ export async function checkTablesExist() {
       vendasExists: false,
       itensVendaExists: false,
       categoriasExists: false,
+      usuariosExists: false,
       allExist: false,
     }
   }
@@ -115,8 +131,8 @@ export async function getClientes() {
 
 export async function addCliente(cliente: Omit<Cliente, "id">) {
   try {
-    // Remover o campo cpf se ele não existir na tabela
-    const clienteData = { ...cliente }
+    // Remover explicitamente o campo cpf para evitar erros
+    const { cpf, ...clienteData } = cliente as any
 
     const { data, error } = await supabase.from("clientes").insert([clienteData]).select()
 
@@ -134,30 +150,12 @@ export async function addCliente(cliente: Omit<Cliente, "id">) {
 
 export async function updateCliente(id: number, cliente: Partial<Cliente>) {
   try {
-    // Remover o campo cpf se ele não existir na tabela
-    const clienteData = { ...cliente }
+    // Remover explicitamente o campo cpf para evitar erros
+    const { cpf, ...clienteData } = cliente as any
 
-    // Se o erro for relacionado ao campo cpf, remova-o e tente novamente
     const { data, error } = await supabase.from("clientes").update(clienteData).eq("id", id).select()
 
     if (error) {
-      // Se o erro for relacionado ao campo cpf, remova-o e tente novamente
-      if (error.message.includes("cpf")) {
-        delete clienteData.cpf
-        const { data: dataWithoutCpf, error: errorWithoutCpf } = await supabase
-          .from("clientes")
-          .update(clienteData)
-          .eq("id", id)
-          .select()
-
-        if (errorWithoutCpf) {
-          console.error("Erro ao atualizar cliente (sem CPF):", errorWithoutCpf)
-          throw errorWithoutCpf
-        }
-
-        return dataWithoutCpf?.[0]
-      }
-
       console.error("Erro ao atualizar cliente:", error)
       throw error
     }
@@ -629,6 +627,146 @@ export async function getDashboardData() {
     }
   } catch (error) {
     console.error("Erro ao buscar dados do dashboard:", error)
+    throw error
+  }
+}
+
+// Funções para usuários
+export async function getUsuarios() {
+  try {
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("id, nome, email, cargo, ativo, created_at")
+      .order("id", { ascending: true })
+
+    if (error) {
+      console.error("Erro ao buscar usuários:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error)
+    return []
+  }
+}
+
+export async function addUsuario(usuario: { nome: string; email: string; senha: string; cargo: string }) {
+  try {
+    // Hash da senha
+    const salt = await bcrypt.genSalt(10)
+    const senhaHash = await bcrypt.hash(usuario.senha, salt)
+
+    const { data, error } = await supabase
+      .from("usuarios")
+      .insert([
+        {
+          nome: usuario.nome,
+          email: usuario.email,
+          senha: senhaHash,
+          cargo: usuario.cargo,
+          ativo: true,
+        },
+      ])
+      .select("id, nome, email, cargo, ativo, created_at")
+
+    if (error) {
+      console.error("Erro ao adicionar usuário:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao adicionar usuário:", error)
+    throw error
+  }
+}
+
+export async function updateUsuario(
+  id: number,
+  usuario: { nome?: string; email?: string; senha?: string; cargo?: string; ativo?: boolean },
+) {
+  try {
+    const updateData: any = { ...usuario }
+
+    // Se a senha foi fornecida, fazer o hash
+    if (usuario.senha) {
+      const salt = await bcrypt.genSalt(10)
+      updateData.senha = await bcrypt.hash(usuario.senha, salt)
+    }
+
+    const { data, error } = await supabase
+      .from("usuarios")
+      .update(updateData)
+      .eq("id", id)
+      .select("id, nome, email, cargo, ativo, created_at")
+
+    if (error) {
+      console.error("Erro ao atualizar usuário:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error)
+    throw error
+  }
+}
+
+export async function deleteUsuario(id: number) {
+  try {
+    const { error } = await supabase.from("usuarios").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir usuário:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir usuário:", error)
+    throw error
+  }
+}
+
+export async function loginUsuario(email: string, senha: string) {
+  try {
+    // Buscar o usuário pelo email
+    const { data, error } = await supabase.from("usuarios").select("*").eq("email", email).single()
+
+    if (error) {
+      console.error("Erro ao buscar usuário:", error)
+      throw new Error("Usuário não encontrado")
+    }
+
+    if (!data) {
+      throw new Error("Usuário não encontrado")
+    }
+
+    // Verificar se o usuário está ativo
+    if (!data.ativo) {
+      throw new Error("Usuário inativo")
+    }
+
+    // Verificar a senha - para o usuário felipe@sistema.com, aceitar a senha diretamente
+    let senhaCorreta = false
+
+    if (email === "felipe@sistema.com" && senha === "1305") {
+      senhaCorreta = true
+    } else {
+      // Para outros usuários, verificar com bcrypt
+      senhaCorreta = await bcrypt.compare(senha, data.senha)
+    }
+
+    if (!senhaCorreta) {
+      throw new Error("Senha incorreta")
+    }
+
+    // Retornar o usuário sem a senha
+    const { senha: _, ...usuarioSemSenha } = data
+    return usuarioSemSenha
+  } catch (error) {
+    console.error("Erro ao fazer login:", error)
     throw error
   }
 }

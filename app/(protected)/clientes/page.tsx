@@ -9,6 +9,8 @@ import ClienteForm from "./cliente-form"
 import { getClientes, deleteCliente, type Cliente, checkTablesExist } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 import InitializeDatabase from "@/components/initialize-database"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export default function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -48,7 +50,7 @@ export default function Clientes() {
 
       // Verificar se o primeiro cliente tem o campo CPF
       if (data.length > 0) {
-        setCpfSupported("cpf" in data[0])
+        setCpfSupported("cpf" in data[0] && data[0].cpf !== undefined)
       }
     } catch (error) {
       console.error("Erro ao carregar clientes:", error)
@@ -214,11 +216,13 @@ export default function Clientes() {
         </div>
 
         {!cpfSupported && (
-          <Card className="p-4 mb-4 bg-yellow-50 border-yellow-200">
-            <p className="text-yellow-800 text-sm">
+          <Alert variant="warning" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Atenção</AlertTitle>
+            <AlertDescription>
               O campo CPF não está disponível no banco de dados. Execute o SQL para adicionar a coluna.
-            </p>
-          </Card>
+            </AlertDescription>
+          </Alert>
         )}
 
         {mostrarForm ? (
@@ -257,11 +261,6 @@ export default function Clientes() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nome
                   </th>
-                  {cpfSupported && (
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      CPF
-                    </th>
-                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
@@ -280,9 +279,6 @@ export default function Clientes() {
                 {clientesFiltrados.map((cliente) => (
                   <tr key={cliente.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{cliente.nome}</td>
-                    {cpfSupported && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.cpf}</td>
-                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.telefone}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.endereco}</td>
@@ -298,7 +294,7 @@ export default function Clientes() {
                 ))}
                 {clientesFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={cpfSupported ? 6 : 5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum cliente encontrado
                     </td>
                   </tr>

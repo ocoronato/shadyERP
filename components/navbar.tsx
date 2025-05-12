@@ -2,10 +2,13 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { LucideMenu, LucideX } from "lucide-react"
+import { LucideMenu, LucideX, LucideLogOut, LucideUser, LucideUsers, LucidePackage, LucideTag } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import CadastroMenu from "./cadastro-menu"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user, logout } = useAuth()
 
   return (
     <nav className="bg-black">
@@ -28,29 +31,34 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
-                <Link
-                  href="/clientes"
-                  className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Clientes
-                </Link>
-                <Link
-                  href="/categorias"
-                  className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Categorias
-                </Link>
-                <Link
-                  href="/produtos"
-                  className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Produtos
-                </Link>
+
+                {/* Menu dropdown para Cadastro */}
+                <CadastroMenu />
+
                 <Link href="/vendas" className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium">
                   Vendas
                 </Link>
+                <Link
+                  href="/usuarios"
+                  className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Usuários
+                </Link>
               </div>
             </div>
+          </div>
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="text-white text-sm">
+              <span className="mr-2">{user?.nome}</span>
+              <span className="bg-gray-700 px-2 py-1 rounded text-xs">{user?.cargo}</span>
+            </div>
+            <button
+              onClick={logout}
+              className="text-white hover:bg-gray-800 p-2 rounded-full focus:outline-none"
+              title="Sair"
+            >
+              <LucideLogOut className="h-5 w-5" />
+            </button>
           </div>
           <div className="md:hidden">
             <button
@@ -80,27 +88,36 @@ export default function Navbar() {
             >
               Dashboard
             </Link>
-            <Link
-              href="/clientes"
-              className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setIsOpen(false)}
-            >
-              Clientes
-            </Link>
-            <Link
-              href="/categorias"
-              className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setIsOpen(false)}
-            >
-              Categorias
-            </Link>
-            <Link
-              href="/produtos"
-              className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={() => setIsOpen(false)}
-            >
-              Produtos
-            </Link>
+
+            {/* Menu móvel para Cadastro */}
+            <div className="text-white px-3 py-2 text-base font-medium">Cadastro</div>
+            <div className="pl-4">
+              <Link
+                href="/clientes"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucideUsers className="inline-block h-4 w-4 mr-2" />
+                Clientes
+              </Link>
+              <Link
+                href="/categorias"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucideTag className="inline-block h-4 w-4 mr-2" />
+                Categorias
+              </Link>
+              <Link
+                href="/produtos"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucidePackage className="inline-block h-4 w-4 mr-2" />
+                Produtos
+              </Link>
+            </div>
+
             <Link
               href="/vendas"
               className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
@@ -108,6 +125,33 @@ export default function Navbar() {
             >
               Vendas
             </Link>
+            <Link
+              href="/usuarios"
+              className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setIsOpen(false)}
+            >
+              Usuários
+            </Link>
+          </div>
+          <div className="pt-4 pb-3 border-t border-gray-700">
+            <div className="flex items-center px-5">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center">
+                  <LucideUser className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="ml-3">
+                <div className="text-base font-medium leading-none text-white">{user?.nome}</div>
+                <div className="text-sm font-medium leading-none text-gray-400 mt-1">{user?.cargo}</div>
+              </div>
+              <button
+                onClick={logout}
+                className="ml-auto text-white hover:bg-gray-800 p-2 rounded-full focus:outline-none"
+                title="Sair"
+              >
+                <LucideLogOut className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
