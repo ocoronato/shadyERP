@@ -72,7 +72,8 @@ export default function VendaDetalhes({ venda, onVoltar, onStatusUpdate }) {
       if (status === "Cancelada") {
         toast({
           title: "Venda cancelada",
-          description: "O status da venda foi alterado para Cancelada e os produtos foram devolvidos ao estoque.",
+          description:
+            "O status da venda foi alterado para Cancelada. Os produtos foram devolvidos ao estoque e as contas a receber associadas foram canceladas.",
         })
       } else {
         toast({

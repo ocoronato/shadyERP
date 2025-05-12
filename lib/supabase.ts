@@ -564,7 +564,9 @@ export async function addVenda(venda: Omit<Venda, "id">) {
   }
 }
 
-// Nova função para atualizar o status de uma venda
+// Localizar a função updateVendaStatus e modificá-la para tratar as contas a receber quando uma venda for cancelada
+
+// Substituir a função updateVendaStatus atual por esta versão atualizada:
 export async function updateVendaStatus(id: number, status: string) {
   try {
     // Verificar se o status está sendo alterado para "Cancelada"
@@ -588,6 +590,26 @@ export async function updateVendaStatus(id: number, status: string) {
                 .update({ estoque: produto.estoque + item.quantidade })
                 .eq("id", produto.id)
             }
+          }
+        }
+
+        // Buscar todas as contas a receber associadas a esta venda
+        const { data: contasReceber } = await supabase.from("contas_receber").select("*").eq("venda_id", id)
+
+        if (contasReceber && contasReceber.length > 0) {
+          // Para cada conta a receber, cancelá-la (excluir ou marcar como cancelada)
+          for (const conta of contasReceber) {
+            // Opção 1: Excluir a conta a receber
+            // await supabase.from("contas_receber").delete().eq("id", conta.id)
+
+            // Opção 2: Marcar a conta como cancelada (preferível para manter histórico)
+            await supabase
+              .from("contas_receber")
+              .update({
+                status: "Cancelado",
+                observacao: conta.observacao ? `${conta.observacao} - Venda cancelada` : "Venda cancelada",
+              })
+              .eq("id", conta.id)
           }
         }
       }
