@@ -33,10 +33,10 @@ git@github.com:ocoronato/shadyERP.git
 
 ## Tecnologias
 
-**Frontend**: HTML, JavaScript, React, Next.js
+**Frontend**: 
 
-**Estilização**: Tailwind CSS
+**Estilização**: 
 
-**Componentes**: shadcn/ui para interface moderna
+**Componentes**: 
 
-**Backend**: Next.js API Routes e Server Actions
+**Backend**: 
