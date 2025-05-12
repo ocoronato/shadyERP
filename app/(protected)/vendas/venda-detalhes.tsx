@@ -57,6 +57,7 @@ export default function VendaDetalhes({ venda, onVoltar, onStatusUpdate }) {
     window.print()
   }
 
+  // Adicionar uma mensagem de feedback quando o status for alterado para "Cancelada"
   const handleSaveStatus = async () => {
     if (status === venda.status) {
       setEditingStatus(false)
@@ -66,10 +67,20 @@ export default function VendaDetalhes({ venda, onVoltar, onStatusUpdate }) {
     setIsSaving(true)
     try {
       await updateVendaStatus(venda.id, status)
-      toast({
-        title: "Status atualizado",
-        description: "O status da venda foi atualizado com sucesso.",
-      })
+
+      // Mensagem específica para cancelamento
+      if (status === "Cancelada") {
+        toast({
+          title: "Venda cancelada",
+          description: "O status da venda foi alterado para Cancelada e os produtos foram devolvidos ao estoque.",
+        })
+      } else {
+        toast({
+          title: "Status atualizado",
+          description: "O status da venda foi atualizado com sucesso.",
+        })
+      }
+
       // Atualizar a venda na lista
       onStatusUpdate({ ...venda, status })
       setEditingStatus(false)
@@ -154,6 +165,23 @@ export default function VendaDetalhes({ venda, onVoltar, onStatusUpdate }) {
             <p className="text-sm text-gray-500">Total</p>
             <p className="font-medium text-blue-600">{formatarPreco(venda.total)}</p>
           </div>
+
+          {/* Informações de pagamento */}
+          {venda.forma_pagamento && (
+            <div>
+              <p className="text-sm text-gray-500">Forma de Pagamento</p>
+              <p className="font-medium">{venda.forma_pagamento}</p>
+            </div>
+          )}
+
+          {venda.parcelas && venda.parcelas > 1 && (
+            <div>
+              <p className="text-sm text-gray-500">Parcelas</p>
+              <p className="font-medium">
+                {venda.parcelas}x de {formatarPreco(venda.valor_parcela || venda.total / venda.parcelas)}
+              </p>
+            </div>
+          )}
         </div>
 
         <h3 className="text-md font-medium mb-2">Itens da Venda</h3>

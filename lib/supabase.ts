@@ -42,12 +42,16 @@ export type ItemVenda = {
   preco_unitario: number
 }
 
+// Atualizar o tipo Venda para incluir informações de pagamento
 export type Venda = {
   id: number
   cliente: string
   data: string
   total: number
   status: string
+  forma_pagamento?: string
+  parcelas?: number
+  valor_parcela?: number
   itens: ItemVenda[]
   created_at?: string
 }
@@ -58,6 +62,46 @@ export type Usuario = {
   email: string
   cargo: string
   ativo: boolean
+  created_at?: string
+}
+
+// Adicionar os novos tipos após os tipos existentes
+// Atualizar apenas o tipo ContaPagar
+export type ContaPagar = {
+  id: number
+  descricao: string
+  valor: number
+  data_vencimento: string
+  data_pagamento?: string
+  status: string
+  fornecedor_id?: number // Alterado de fornecedor para fornecedor_id
+  observacao?: string
+  created_at?: string
+}
+
+export type ContaReceber = {
+  id: number
+  venda_id?: number
+  cliente: string
+  valor: number
+  data_vencimento: string
+  data_recebimento?: string
+  status: string
+  parcela?: number
+  total_parcelas?: number
+  observacao?: string
+  created_at?: string
+}
+
+// Adicionar o tipo Fornecedor
+export type Fornecedor = {
+  id: number
+  cnpj: string
+  razao_social: string
+  nome_fantasia?: string
+  inscricao_estadual?: string
+  inscricao_estadual_isento: boolean
+  data_nascimento?: string
   created_at?: string
 }
 
@@ -88,6 +132,10 @@ export async function checkTablesExist() {
     const { error: usuariosError } = await supabase.from("usuarios").select("id").limit(1)
     const usuariosExists = !usuariosError
 
+    // Verificar se a tabela fornecedores existe
+    const { error: fornecedoresError } = await supabase.from("fornecedores").select("id").limit(1)
+    const fornecedoresExists = !fornecedoresError
+
     return {
       clientesExists,
       produtosExists,
@@ -95,8 +143,15 @@ export async function checkTablesExist() {
       itensVendaExists,
       categoriasExists,
       usuariosExists,
+      fornecedoresExists,
       allExist:
-        clientesExists && produtosExists && vendasExists && itensVendaExists && categoriasExists && usuariosExists,
+        clientesExists &&
+        produtosExists &&
+        vendasExists &&
+        itensVendaExists &&
+        categoriasExists &&
+        usuariosExists &&
+        fornecedoresExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -107,6 +162,7 @@ export async function checkTablesExist() {
       itensVendaExists: false,
       categoriasExists: false,
       usuariosExists: false,
+      fornecedoresExists: false,
       allExist: false,
     }
   }
@@ -129,12 +185,15 @@ export async function getClientes() {
   }
 }
 
+// Modificar as funções para clientes para incluir o campo CPF corretamente
+
+// Modificar a função addCliente para incluir o campo CPF
 export async function addCliente(cliente: Omit<Cliente, "id">) {
   try {
-    // Remover explicitamente o campo cpf para evitar erros
-    const { cpf, ...clienteData } = cliente as any
+    // Remover a linha que remove explicitamente o campo cpf
+    // const { cpf, ...clienteData } = cliente as any
 
-    const { data, error } = await supabase.from("clientes").insert([clienteData]).select()
+    const { data, error } = await supabase.from("clientes").insert([cliente]).select()
 
     if (error) {
       console.error("Erro ao adicionar cliente:", error)
@@ -148,12 +207,13 @@ export async function addCliente(cliente: Omit<Cliente, "id">) {
   }
 }
 
+// Modificar a função updateCliente para incluir o campo CPF
 export async function updateCliente(id: number, cliente: Partial<Cliente>) {
   try {
-    // Remover explicitamente o campo cpf para evitar erros
-    const { cpf, ...clienteData } = cliente as any
+    // Remover a linha que remove explicitamente o campo cpf
+    // const { cpf, ...clienteData } = cliente as any
 
-    const { data, error } = await supabase.from("clientes").update(clienteData).eq("id", id).select()
+    const { data, error } = await supabase.from("clientes").update(cliente).eq("id", id).select()
 
     if (error) {
       console.error("Erro ao atualizar cliente:", error)
@@ -409,6 +469,7 @@ export async function getVendas() {
   }
 }
 
+// Atualizar a função addVenda para incluir as informações de pagamento
 export async function addVenda(venda: Omit<Venda, "id">) {
   try {
     // Verificar estoque de todos os produtos antes de prosseguir
@@ -431,6 +492,9 @@ export async function addVenda(venda: Omit<Venda, "id">) {
           data: venda.data,
           total: venda.total,
           status: venda.status,
+          forma_pagamento: venda.forma_pagamento,
+          parcelas: venda.parcelas,
+          valor_parcela: venda.valor_parcela,
         },
       ])
       .select()
@@ -462,6 +526,34 @@ export async function addVenda(venda: Omit<Venda, "id">) {
       await updateEstoqueProduto(item.produto, item.quantidade)
     }
 
+    // Se a venda for a prazo, criar as contas a receber
+    if (venda.forma_pagamento === "A Prazo" && venda.parcelas && venda.parcelas > 0) {
+      const valorParcela = venda.valor_parcela || venda.total / venda.parcelas
+      const dataAtual = new Date()
+
+      // Criar uma conta a receber para cada parcela
+      for (let i = 1; i <= venda.parcelas; i++) {
+        // Calcular a data de vencimento (30 dias * número da parcela)
+        const dataVencimento = new Date(dataAtual)
+        dataVencimento.setDate(dataVencimento.getDate() + 30 * i)
+
+        // Formatar a data para o formato YYYY-MM-DD
+        const dataFormatada = dataVencimento.toISOString().split("T")[0]
+
+        // Criar a conta a receber
+        await addContaReceber({
+          venda_id: vendaId,
+          cliente: venda.cliente,
+          valor: valorParcela,
+          data_vencimento: dataFormatada,
+          status: "Pendente",
+          parcela: i,
+          total_parcelas: venda.parcelas,
+          observacao: `Parcela ${i}/${venda.parcelas} da venda #${vendaId}`,
+        })
+      }
+    }
+
     return {
       ...vendaInserida[0],
       itens: venda.itens,
@@ -475,6 +567,33 @@ export async function addVenda(venda: Omit<Venda, "id">) {
 // Nova função para atualizar o status de uma venda
 export async function updateVendaStatus(id: number, status: string) {
   try {
+    // Verificar se o status está sendo alterado para "Cancelada"
+    if (status === "Cancelada") {
+      // Buscar o status atual da venda
+      const { data: vendaAtual } = await supabase.from("vendas").select("status").eq("id", id).single()
+
+      // Só restaurar o estoque se o status atual não for "Cancelada"
+      if (vendaAtual && vendaAtual.status !== "Cancelada") {
+        // Buscar os itens da venda
+        const { data: itens } = await supabase.from("itens_venda").select("*").eq("venda_id", id)
+
+        if (itens && itens.length > 0) {
+          // Para cada item, restaurar o estoque
+          for (const item of itens) {
+            const produto = await getProdutoByNome(item.produto)
+            if (produto) {
+              // Adicionar a quantidade de volta ao estoque
+              await supabase
+                .from("produtos")
+                .update({ estoque: produto.estoque + item.quantidade })
+                .eq("id", produto.id)
+            }
+          }
+        }
+      }
+    }
+
+    // Atualizar o status da venda
     const { data, error } = await supabase.from("vendas").update({ status }).eq("id", id).select()
 
     if (error) {
@@ -678,7 +797,7 @@ export async function addUsuario(usuario: { nome: string; email: string; senha: 
     return data?.[0]
   } catch (error) {
     console.error("Erro ao adicionar usuário:", error)
-    throw error
+    return []
   }
 }
 
@@ -770,3 +889,235 @@ export async function loginUsuario(email: string, senha: string) {
     throw error
   }
 }
+
+// Adicionar as funções para contas a pagar após as funções existentes
+export async function getContasPagar(filtroData?: { inicio?: string; fim?: string }) {
+  try {
+    let query = supabase.from("contas_pagar").select("*").order("data_vencimento", { ascending: true })
+
+    if (filtroData?.inicio) {
+      query = query.gte("data_vencimento", filtroData.inicio)
+    }
+    if (filtroData?.fim) {
+      query = query.lte("data_vencimento", filtroData.fim)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Erro ao buscar contas a pagar:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar contas a pagar:", error)
+    return []
+  }
+}
+
+export async function addContaPagar(conta: Omit<ContaPagar, "id">) {
+  try {
+    const { data, error } = await supabase.from("contas_pagar").insert([conta]).select()
+
+    if (error) {
+      console.error("Erro ao adicionar conta a pagar:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao adicionar conta a pagar:", error)
+    throw error
+  }
+}
+
+export async function updateContaPagar(id: number, conta: Partial<ContaPagar>) {
+  try {
+    const { data, error } = await supabase.from("contas_pagar").update(conta).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar conta a pagar:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar conta a pagar:", error)
+    throw error
+  }
+}
+
+export async function deleteContaPagar(id: number) {
+  try {
+    const { error } = await supabase.from("contas_pagar").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir conta a pagar:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir conta a pagar:", error)
+    throw error
+  }
+}
+
+// Adicionar as funções para contas a receber
+export async function getContasReceber(filtroData?: { inicio?: string; fim?: string }) {
+  try {
+    let query = supabase.from("contas_receber").select("*").order("data_vencimento", { ascending: true })
+
+    if (filtroData?.inicio) {
+      query = query.gte("data_vencimento", filtroData.inicio)
+    }
+    if (filtroData?.fim) {
+      query = query.lte("data_vencimento", filtroData.fim)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("Erro ao buscar contas a receber:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar contas a receber:", error)
+    return []
+  }
+}
+
+export async function addContaReceber(conta: Omit<ContaReceber, "id">) {
+  try {
+    const { data, error } = await supabase.from("contas_receber").insert([conta]).select()
+
+    if (error) {
+      console.error("Erro ao adicionar conta a receber:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao adicionar conta a receber:", error)
+    throw error
+  }
+}
+
+export async function updateContaReceber(id: number, conta: Partial<ContaReceber>) {
+  try {
+    const { data, error } = await supabase.from("contas_receber").update(conta).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar conta a receber:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar conta a receber:", error)
+    throw error
+  }
+}
+
+export async function deleteContaReceber(id: number) {
+  try {
+    const { error } = await supabase.from("contas_receber").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir conta a receber:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir conta a receber:", error)
+    throw error
+  }
+}
+
+// Funções para fornecedores
+export async function getFornecedores() {
+  try {
+    const { data, error } = await supabase.from("fornecedores").select("*").order("razao_social", { ascending: true })
+
+    if (error) {
+      console.error("Erro ao buscar fornecedores:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar fornecedores:", error)
+    return []
+  }
+}
+
+export async function addFornecedor(fornecedor: Omit<Fornecedor, "id">) {
+  try {
+    const { data, error } = await supabase.from("fornecedores").insert([fornecedor]).select()
+
+    if (error) {
+      console.error("Erro ao adicionar fornecedor:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao adicionar fornecedor:", error)
+    throw error
+  }
+}
+
+export async function updateFornecedor(id: number, fornecedor: Partial<Fornecedor>) {
+  try {
+    const { data, error } = await supabase.from("fornecedores").update(fornecedor).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar fornecedor:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar fornecedor:", error)
+    throw error
+  }
+}
+
+export async function deleteFornecedor(id: number) {
+  try {
+    // Verificar se o fornecedor está sendo usado em contas a pagar
+    const { data: contas, error: contasError } = await supabase
+      .from("contas_pagar")
+      .select("id")
+      .eq("fornecedor_id", id) // Alterado para fornecedor_id
+      .limit(1)
+
+    if (contasError) {
+      console.error("Erro ao verificar uso do fornecedor:", contasError)
+      throw contasError
+    }
+
+    if (contas && contas.length > 0) {
+      throw new Error("Este fornecedor não pode ser excluído porque está sendo usado em contas a pagar.")
+    }
+
+    const { error } = await supabase.from("fornecedores").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir fornecedor:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir fornecedor:", error)
+    throw error
+  }
+}
+
+// Não é necessário alterar as funções getContasPagar, addContaPagar, updateContaPagar e deleteContaPagar
+// pois elas já lidam com os dados de forma genérica

@@ -51,13 +51,13 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Atualizar a validação do formulário para incluir o CPF como obrigatório apenas se for suportado
+  // Atualizar a validação do formulário para incluir o CPF como obrigatório
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.nome || !formData.email) {
+    if (!formData.nome || !formData.email || !formData.cpf) {
       toast({
         title: "Campos obrigatórios",
-        description: "Nome e email são obrigatórios!",
+        description: "Nome, email e CPF são obrigatórios!",
         variant: "destructive",
       })
       return
@@ -101,7 +101,7 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
         </Alert>
       )}
 
-      {/* Adicionar o campo CPF no grid do formulário apenas se for suportado */}
+      {/* Adicionar o campo CPF no grid do formulário */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="space-y-2">
           <Label htmlFor="nome">Nome</Label>
@@ -129,6 +129,18 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="cpf">CPF</Label>
+          <Input
+            id="cpf"
+            name="cpf"
+            value={formData.cpf || ""}
+            onChange={handleChange}
+            placeholder="000.000.000-00"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="telefone">Telefone</Label>
           <Input
             id="telefone"
@@ -139,7 +151,7 @@ export default function ClienteForm({ cliente, onSave, onCancel }: ClienteFormPr
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <Label htmlFor="endereco">Endereço</Label>
           <Input
             id="endereco"

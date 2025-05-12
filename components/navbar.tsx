@@ -2,7 +2,19 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { LucideMenu, LucideX, LucideLogOut, LucideUser, LucideUsers, LucidePackage, LucideTag } from "lucide-react"
+import {
+  LucideMenu,
+  LucideX,
+  LucideLogOut,
+  LucideUser,
+  LucideUsers,
+  LucidePackage,
+  LucideTag,
+  LucideDollarSign,
+  LucideArrowDownCircle,
+  LucideArrowUpCircle,
+  LucideBuilding,
+} from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import CadastroMenu from "./cadastro-menu"
 
@@ -38,6 +50,32 @@ export default function Navbar() {
                 <Link href="/vendas" className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium">
                   Vendas
                 </Link>
+
+                {/* Menu dropdown para Financeiro */}
+                <div className="relative group">
+                  <button className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+                    <LucideDollarSign className="h-4 w-4 mr-1" /> Financeiro
+                  </button>
+                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                      <Link
+                        href="/financeiro/contas-pagar"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <LucideArrowUpCircle className="mr-2 h-4 w-4" />
+                        Contas a Pagar
+                      </Link>
+                      <Link
+                        href="/financeiro/contas-receber"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <LucideArrowDownCircle className="mr-2 h-4 w-4" />
+                        Contas a Receber
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
                 <Link
                   href="/usuarios"
                   className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium"
@@ -101,6 +139,14 @@ export default function Navbar() {
                 Clientes
               </Link>
               <Link
+                href="/fornecedores"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucideBuilding className="inline-block h-4 w-4 mr-2" />
+                Fornecedores
+              </Link>
+              <Link
                 href="/categorias"
                 className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
                 onClick={() => setIsOpen(false)}
@@ -125,6 +171,31 @@ export default function Navbar() {
             >
               Vendas
             </Link>
+
+            {/* Menu móvel para Financeiro */}
+            <div className="text-white px-3 py-2 text-base font-medium">
+              <LucideDollarSign className="inline-block h-4 w-4 mr-2" />
+              Financeiro
+            </div>
+            <div className="pl-4">
+              <Link
+                href="/financeiro/contas-pagar"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucideArrowUpCircle className="inline-block h-4 w-4 mr-2" />
+                Contas a Pagar
+              </Link>
+              <Link
+                href="/financeiro/contas-receber"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucideArrowDownCircle className="inline-block h-4 w-4 mr-2" />
+                Contas a Receber
+              </Link>
+            </div>
+
             <Link
               href="/usuarios"
               className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"

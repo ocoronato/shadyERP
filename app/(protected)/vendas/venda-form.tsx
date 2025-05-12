@@ -20,6 +20,9 @@ export default function VendaForm({ onSave, onCancel }) {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Novos estados para opções de pagamento
+  const [formaPagamento, setFormaPagamento] = useState("")
+  const [parcelas, setParcelas] = useState(1)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -80,6 +83,11 @@ export default function VendaForm({ onSave, onCancel }) {
     }, 0)
   }
 
+  const calcularValorParcela = () => {
+    const total = calcularTotal()
+    return parcelas > 0 ? total / parcelas : total
+  }
+
   const verificarEstoque = () => {
     for (const item of itens) {
       if (item.produto && item.quantidade > item.estoqueDisponivel) {
@@ -110,6 +118,15 @@ export default function VendaForm({ onSave, onCancel }) {
       return
     }
 
+    if (!formaPagamento) {
+      toast({
+        title: "Forma de pagamento obrigatória",
+        description: "Selecione uma forma de pagamento!",
+        variant: "destructive",
+      })
+      return
+    }
+
     // Verificar estoque
     if (!verificarEstoque()) {
       toast({
@@ -129,16 +146,22 @@ export default function VendaForm({ onSave, onCancel }) {
         .toString()
         .padStart(2, "0")}/${dataAtual.getFullYear()}`
 
+      const total = calcularTotal()
+      const valorParcela = parcelas > 0 ? total / parcelas : total
+
       const novaVenda = {
         cliente,
         data: dataFormatada,
         status,
+        forma_pagamento: formaPagamento,
+        parcelas: formaPagamento === "Cartão" || formaPagamento === "A Prazo" ? parcelas : 1,
+        valor_parcela: formaPagamento === "Cartão" || formaPagamento === "A Prazo" ? valorParcela : total,
         itens: itens.map((item) => ({
           produto: item.produto,
           quantidade: item.quantidade,
           preco_unitario: item.preco_unitario,
         })),
-        total: calcularTotal(),
+        total,
       }
 
       const vendaSalva = await addVenda(novaVenda)
@@ -288,6 +311,50 @@ export default function VendaForm({ onSave, onCancel }) {
         <LucidePlus className="h-4 w-4 mr-2" /> Adicionar Item
       </Button>
 
+      {/* Opções de pagamento */}
+      <div className="mt-6 mb-4">
+        <h3 className="text-md font-medium mb-2">Opções de Pagamento</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="forma-pagamento">Forma de Pagamento</Label>
+            <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+              <SelectTrigger id="forma-pagamento">
+                <SelectValue placeholder="Selecione a forma de pagamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                <SelectItem value="PIX">PIX</SelectItem>
+                <SelectItem value="Cartão">Cartão</SelectItem>
+                <SelectItem value="A Prazo">A Prazo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(formaPagamento === "Cartão" || formaPagamento === "A Prazo") && (
+            <div className="space-y-2">
+              <Label htmlFor="parcelas">Número de Parcelas</Label>
+              <Input
+                id="parcelas"
+                type="number"
+                min="1"
+                max="12"
+                value={parcelas}
+                onChange={(e) => setParcelas(Number.parseInt(e.target.value) || 1)}
+                placeholder="Número de parcelas"
+              />
+            </div>
+          )}
+        </div>
+
+        {(formaPagamento === "Cartão" || formaPagamento === "A Prazo") && parcelas > 1 && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-md">
+            <p className="text-sm font-medium">
+              Valor de cada parcela: R$ {calcularValorParcela().toFixed(2).replace(".", ",")}
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-between items-center mt-4 mb-6">
         <div className="text-lg font-medium">
           Total: <span className="text-blue-600">R$ {calcularTotal().toFixed(2).replace(".", ",")}</span>
@@ -298,7 +365,10 @@ export default function VendaForm({ onSave, onCancel }) {
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting || !verificarEstoque() || itens.some((item) => !item.produto)}>
+        <Button
+          type="submit"
+          disabled={isSubmitting || !verificarEstoque() || itens.some((item) => !item.produto) || !formaPagamento}
+        >
           {isSubmitting ? "Processando..." : "Finalizar Venda"}
         </Button>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { LucideChevronDown, LucideUsers, LucidePackage, LucideTag } from "lucide-react"
+import { LucideChevronDown, LucideUsers, LucidePackage, LucideTag, LucideBuilding } from "lucide-react"
 
 export default function CadastroMenu() {
   const [isOpen, setIsOpen] = useState(false)
@@ -41,6 +41,14 @@ export default function CadastroMenu() {
             >
               <LucideUsers className="mr-2 h-4 w-4" />
               Clientes
+            </Link>
+            <Link
+              href="/fornecedores"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsOpen(false)}
+            >
+              <LucideBuilding className="mr-2 h-4 w-4" />
+              Fornecedores
             </Link>
             <Link
               href="/categorias"

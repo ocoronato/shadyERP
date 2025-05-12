@@ -69,14 +69,15 @@ export default function Clientes() {
     carregarClientes()
   }, [])
 
-  // Atualizar a função de filtro para incluir o CPF apenas se for suportado
+  // Atualizar a função de filtro para incluir o CPF
   const clientesFiltrados = clientes.filter((cliente) => {
     const termoBusca = busca.toLowerCase()
     const matchNome = cliente.nome.toLowerCase().includes(termoBusca)
     const matchEmail = cliente.email.toLowerCase().includes(termoBusca)
-    const matchCpf = cpfSupported && cliente.cpf ? cliente.cpf.toLowerCase().includes(termoBusca) : false
+    const matchCpf = cliente.cpf ? cliente.cpf.toLowerCase().includes(termoBusca) : false
+    const matchId = cliente.id.toString().includes(termoBusca)
 
-    return matchNome || matchEmail || matchCpf
+    return matchNome || matchEmail || matchCpf || matchId
   })
 
   const adicionarCliente = (novoCliente: Cliente) => {
@@ -258,8 +259,12 @@ export default function Clientes() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nome
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    CPF
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
@@ -278,7 +283,9 @@ export default function Clientes() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {clientesFiltrados.map((cliente) => (
                   <tr key={cliente.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{cliente.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{cliente.nome}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.cpf}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.email}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.telefone}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cliente.endereco}</td>
@@ -294,7 +301,7 @@ export default function Clientes() {
                 ))}
                 {clientesFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum cliente encontrado
                     </td>
                   </tr>

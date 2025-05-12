@@ -4,7 +4,15 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { LucidePlus, LucideSearch, LucideEdit, LucideTrash, LucideRefreshCw, LucideDatabase } from "lucide-react"
+import {
+  LucidePlus,
+  LucideSearch,
+  LucideEdit,
+  LucideTrash,
+  LucideRefreshCw,
+  LucideDatabase,
+  LucideLoader2,
+} from "lucide-react"
 import ProdutoForm from "./produto-form"
 import { getProdutos, deleteProduto, type Produto, checkTablesExist } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
@@ -64,7 +72,8 @@ export default function Produtos() {
   const produtosFiltrados = produtos.filter(
     (produto) =>
       produto.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      produto.categoria.toLowerCase().includes(busca.toLowerCase()),
+      produto.categoria.toLowerCase().includes(busca.toLowerCase()) ||
+      produto.id.toString().includes(busca),
   )
 
   const adicionarProduto = (novoProduto: Produto) => {
@@ -133,6 +142,7 @@ export default function Produtos() {
           </div>
           <Card className="p-6">
             <div className="flex justify-center items-center h-32">
+              <LucideLoader2 className="h-8 w-8 text-blue-500 animate-spin mr-2" />
               <p className="text-gray-500">Carregando produtos...</p>
             </div>
           </Card>
@@ -240,6 +250,7 @@ export default function Produtos() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nome
                   </th>
@@ -260,6 +271,7 @@ export default function Produtos() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {produtosFiltrados.map((produto) => (
                   <tr key={produto.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{produto.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{produto.nome}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.categoria}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -278,7 +290,7 @@ export default function Produtos() {
                 ))}
                 {produtosFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum produto encontrado
                     </td>
                   </tr>
