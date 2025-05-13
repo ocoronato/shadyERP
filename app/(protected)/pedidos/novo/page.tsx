@@ -23,6 +23,7 @@ export default function NovoPedidoPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [dadosCarregados, setDadosCarregados] = useState(false)
 
   // Estado do formulário
   const [fornecedorId, setFornecedorId] = useState<string>("")
@@ -69,13 +70,18 @@ export default function NovoPedidoPage() {
     setItemTamanhos(tamanhos)
   }, [])
 
+  // Carregar dados iniciais apenas uma vez
   useEffect(() => {
+    if (dadosCarregados) return
+
     const carregarDados = async () => {
       setIsLoading(true)
       try {
+        console.log("Carregando dados iniciais...")
         const [fornecedoresData, categoriasData] = await Promise.all([getFornecedores(), getCategorias()])
         setFornecedores(fornecedoresData)
         setCategorias(categoriasData)
+        setDadosCarregados(true)
 
         // Verificar se há parâmetros de produto pré-selecionado
         const produtoNome = searchParams.get("produto")
@@ -86,7 +92,7 @@ export default function NovoPedidoPage() {
           setItemNome(produtoNome)
 
           // Se tiver categoria, encontrar o ID da categoria
-          if (produtoCategoria) {
+          if (produtoCategoria && categoriasData.length > 0) {
             const categoria = categoriasData.find((c) => c.nome === produtoCategoria)
             if (categoria) {
               setItemCategoria(categoria.id.toString())
@@ -111,7 +117,7 @@ export default function NovoPedidoPage() {
     }
 
     carregarDados()
-  }, [toast, searchParams])
+  }, [toast, searchParams, dadosCarregados])
 
   // Calcular o total do pedido
   const calcularTotal = () => {
