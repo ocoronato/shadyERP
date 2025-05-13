@@ -2,16 +2,9 @@
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import {
-  LucideChevronDown,
-  LucideUsers,
-  LucidePackage,
-  LucideTag,
-  LucideBuilding,
-  LucideShoppingBag,
-} from "lucide-react"
+import { LucideChevronDown, LucideArrowDownCircle, LucideArrowUpCircle } from "lucide-react"
 
-export default function CadastroMenu() {
+export default function FinanceiroMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -35,51 +28,27 @@ export default function CadastroMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium flex items-center"
       >
-        Cadastro <LucideChevronDown className="ml-1 h-4 w-4" />
+        Financeiro <LucideChevronDown className="ml-1 h-4 w-4" />
       </button>
 
       {isOpen && (
         <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
           <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
             <Link
-              href="/clientes"
+              href="/financeiro/contas-pagar"
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               onClick={() => setIsOpen(false)}
             >
-              <LucideUsers className="mr-2 h-4 w-4" />
-              Clientes
+              <LucideArrowUpCircle className="mr-2 h-4 w-4" />
+              Contas a Pagar
             </Link>
             <Link
-              href="/fornecedores"
+              href="/financeiro/contas-receber"
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               onClick={() => setIsOpen(false)}
             >
-              <LucideBuilding className="mr-2 h-4 w-4" />
-              Fornecedores
-            </Link>
-            <Link
-              href="/categorias"
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={() => setIsOpen(false)}
-            >
-              <LucideTag className="mr-2 h-4 w-4" />
-              Categorias
-            </Link>
-            <Link
-              href="/produtos"
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={() => setIsOpen(false)}
-            >
-              <LucidePackage className="mr-2 h-4 w-4" />
-              Produtos
-            </Link>
-            <Link
-              href="/pedidos"
-              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={() => setIsOpen(false)}
-            >
-              <LucideShoppingBag className="mr-2 h-4 w-4" />
-              Pedidos
+              <LucideArrowDownCircle className="mr-2 h-4 w-4" />
+              Contas a Receber
             </Link>
           </div>
         </div>

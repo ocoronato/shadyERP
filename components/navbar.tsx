@@ -14,9 +14,11 @@ import {
   LucideArrowDownCircle,
   LucideArrowUpCircle,
   LucideBuilding,
+  LucideShoppingBag,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import CadastroMenu from "./cadastro-menu"
+import FinanceiroMenu from "./financeiro-menu"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -52,29 +54,7 @@ export default function Navbar() {
                 </Link>
 
                 {/* Menu dropdown para Financeiro */}
-                <div className="relative group">
-                  <button className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                    <LucideDollarSign className="h-4 w-4 mr-1" /> Financeiro
-                  </button>
-                  <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="py-1" role="menu" aria-orientation="vertical">
-                      <Link
-                        href="/financeiro/contas-pagar"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <LucideArrowUpCircle className="mr-2 h-4 w-4" />
-                        Contas a Pagar
-                      </Link>
-                      <Link
-                        href="/financeiro/contas-receber"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <LucideArrowDownCircle className="mr-2 h-4 w-4" />
-                        Contas a Receber
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <FinanceiroMenu />
 
                 <Link
                   href="/usuarios"
@@ -161,6 +141,14 @@ export default function Navbar() {
               >
                 <LucidePackage className="inline-block h-4 w-4 mr-2" />
                 Produtos
+              </Link>
+              <Link
+                href="/pedidos"
+                className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                <LucideShoppingBag className="inline-block h-4 w-4 mr-2" />
+                Pedidos
               </Link>
             </div>
 

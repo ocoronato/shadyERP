@@ -54,7 +54,19 @@ export default function VendaDetalhes({ venda, onVoltar, onStatusUpdate }) {
   }
 
   const imprimirVenda = () => {
+    // Salvar o título original do documento
+    const tituloOriginal = document.title
+
+    // Definir o novo título com o ID da venda
+    document.title = `Venda_${venda.id}`
+
+    // Imprimir a página
     window.print()
+
+    // Restaurar o título original após um pequeno delay
+    setTimeout(() => {
+      document.title = tituloOriginal
+    }, 100)
   }
 
   // Adicionar uma mensagem de feedback quando o status for alterado para "Cancelada"

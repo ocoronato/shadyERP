@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { addCategoria, updateCategoria, type Categoria } from "@/lib/supabase"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { addCategoria, updateCategoria, getCategorias, type Categoria } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 
 interface CategoriaFormProps {
@@ -20,15 +21,37 @@ export default function CategoriaForm({ categoria, onSave, onCancel }: Categoria
   const [formData, setFormData] = useState({
     nome: "",
     descricao: "",
+    categoria_pai_id: null as number | null,
   })
+  const [categorias, setCategorias] = useState<Categoria[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+
+  // Carregar categorias para o select de categoria pai
+  useEffect(() => {
+    async function carregarCategorias() {
+      try {
+        const data = await getCategorias()
+        // Filtrar a categoria atual (se estiver editando) para evitar ciclos
+        const categoriasDisponiveis = categoria ? data.filter((cat) => cat.id !== categoria.id) : data
+        setCategorias(categoriasDisponiveis)
+      } catch (error) {
+        console.error("Erro ao carregar categorias:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    carregarCategorias()
+  }, [categoria])
 
   useEffect(() => {
     if (categoria) {
       setFormData({
         nome: categoria.nome || "",
         descricao: categoria.descricao || "",
+        categoria_pai_id: categoria.categoria_pai_id || null,
       })
     }
   }, [categoria])
@@ -52,13 +75,19 @@ export default function CategoriaForm({ categoria, onSave, onCancel }: Categoria
     setIsSubmitting(true)
 
     try {
+      const categoriaDados = {
+        nome: formData.nome,
+        descricao: formData.descricao,
+        categoria_pai_id: formData.categoria_pai_id,
+      }
+
       if (categoria) {
         // Atualizar categoria existente
-        const categoriaAtualizada = await updateCategoria(categoria.id, formData)
+        const categoriaAtualizada = await updateCategoria(categoria.id, categoriaDados)
         onSave(categoriaAtualizada)
       } else {
         // Adicionar nova categoria
-        const novaCategoria = await addCategoria(formData)
+        const novaCategoria = await addCategoria(categoriaDados)
         onSave(novaCategoria)
       }
     } catch (error) {
@@ -71,6 +100,10 @@ export default function CategoriaForm({ categoria, onSave, onCancel }: Categoria
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (isLoading) {
+    return <div className="p-4 text-center">Carregando categorias...</div>
   }
 
   return (
@@ -88,6 +121,31 @@ export default function CategoriaForm({ categoria, onSave, onCancel }: Categoria
             placeholder="Nome da categoria"
             required
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="categoria_pai_id">Categoria Pai (opcional)</Label>
+          <Select
+            value={formData.categoria_pai_id?.toString() || ""}
+            onValueChange={(value) =>
+              setFormData((prev) => ({
+                ...prev,
+                categoria_pai_id: value ? Number.parseInt(value) : null,
+              }))
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma categoria pai (opcional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Nenhuma (Categoria Principal)</SelectItem>
+              {categorias.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id.toString()}>
+                  {cat.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">

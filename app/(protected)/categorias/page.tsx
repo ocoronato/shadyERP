@@ -1,14 +1,25 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { LucidePlus, LucideSearch, LucideEdit, LucideTrash, LucideRefreshCw, LucideDatabase } from "lucide-react"
+import {
+  LucidePlus,
+  LucideSearch,
+  LucideEdit,
+  LucideTrash,
+  LucideRefreshCw,
+  LucideDatabase,
+  LucideChevronRight,
+} from "lucide-react"
 import CategoriaForm from "./categoria-form"
 import { getCategorias, deleteCategoria, type Categoria, checkTablesExist } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 import InitializeDatabase from "@/components/initialize-database"
+import { Badge } from "@/components/ui/badge"
 
 export default function Categorias() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -61,10 +72,64 @@ export default function Categorias() {
     carregarCategorias()
   }, [])
 
-  const categoriasFiltradas = categorias.filter(
-    (categoria) =>
-      categoria.nome.toLowerCase().includes(busca.toLowerCase()) || categoria.id.toString().includes(busca),
-  )
+  // Organizar categorias em hierarquia
+  const categoriasHierarquicas = categorias.filter((cat) => !cat.categoria_pai_id)
+
+  // Função para encontrar subcategorias
+  const encontrarSubcategorias = (categoriaId: number) => {
+    return categorias.filter((cat) => cat.categoria_pai_id === categoriaId)
+  }
+
+  // Função para renderizar uma categoria com suas subcategorias
+  const renderizarCategoria = (categoria: Categoria, nivel = 0) => {
+    const subcategorias = encontrarSubcategorias(categoria.id)
+    const matchBusca =
+      categoria.nome.toLowerCase().includes(busca.toLowerCase()) || categoria.id.toString().includes(busca)
+
+    if (busca && !matchBusca && subcategorias.length === 0) {
+      return null
+    }
+
+    return (
+      <React.Fragment key={categoria.id}>
+        <tr className={nivel > 0 ? "bg-gray-50" : ""}>
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{categoria.id}</td>
+          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+            <div className="flex items-center">
+              {nivel > 0 && (
+                <div className="ml-4 mr-2">
+                  <LucideChevronRight className="h-4 w-4 text-gray-400" />
+                </div>
+              )}
+              {categoria.nome}
+              {nivel === 0 && subcategorias.length > 0 && (
+                <Badge variant="outline" className="ml-2">
+                  {subcategorias.length} subcategoria{subcategorias.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+          </td>
+          <td className="px-6 py-4 text-sm text-gray-500">{categoria.descricao}</td>
+          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <Button variant="ghost" size="sm" onClick={() => editarCategoria(categoria)}>
+              <LucideEdit className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => excluirCategoria(categoria.id)}>
+              <LucideTrash className="h-4 w-4 text-red-500" />
+            </Button>
+          </td>
+        </tr>
+        {subcategorias.map((subcat) => renderizarCategoria(subcat, nivel + 1))}
+      </React.Fragment>
+    )
+  }
+
+  const categoriasFiltradas = busca
+    ? categorias.filter(
+        (categoria) =>
+          categoria.nome.toLowerCase().includes(busca.toLowerCase()) || categoria.id.toString().includes(busca),
+      )
+    : categoriasHierarquicas
 
   const adicionarCategoria = (novaCategoria: Categoria) => {
     setCategorias([...categorias, novaCategoria])
@@ -86,6 +151,18 @@ export default function Categorias() {
   }
 
   const excluirCategoria = async (id: number) => {
+    // Verificar se existem subcategorias
+    const temSubcategorias = categorias.some((cat) => cat.categoria_pai_id === id)
+
+    if (temSubcategorias) {
+      toast({
+        title: "Não é possível excluir",
+        description: "Esta categoria possui subcategorias. Remova ou reclassifique as subcategorias primeiro.",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (confirm("Tem certeza que deseja excluir esta categoria?")) {
       try {
         await deleteCategoria(id)
@@ -252,22 +329,10 @@ export default function Categorias() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {categoriasFiltradas.map((categoria) => (
-                  <tr key={categoria.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{categoria.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{categoria.nome}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{categoria.descricao}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button variant="ghost" size="sm" onClick={() => editarCategoria(categoria)}>
-                        <LucideEdit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => excluirCategoria(categoria.id)}>
-                        <LucideTrash className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {categoriasFiltradas.length === 0 && (
+                {busca
+                  ? categoriasFiltradas.map((categoria) => renderizarCategoria(categoria))
+                  : categoriasHierarquicas.map((categoria) => renderizarCategoria(categoria))}
+                {(busca ? categoriasFiltradas.length === 0 : categoriasHierarquicas.length === 0) && (
                   <tr>
                     <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhuma categoria encontrada
