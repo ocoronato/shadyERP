@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,19 +11,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { LucideArrowLeft, LucidePlus, LucideTrash, LucidePackage, LucideCalendar } from "lucide-react"
-import { getFornecedores, getCategorias, addPedido, type Fornecedor, type Categoria } from "@/lib/supabase"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  LucideArrowLeft,
+  LucidePlus,
+  LucideTrash,
+  LucidePackage,
+  LucideCalendar,
+  LucideSearch,
+  LucideShoppingCart,
+} from "lucide-react"
+import {
+  getFornecedores,
+  getCategorias,
+  getProdutos,
+  addPedido,
+  type Fornecedor,
+  type Categoria,
+  type Produto,
+} from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 
 export default function NovoPedidoPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [dadosCarregados, setDadosCarregados] = useState(false)
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [produtosFiltrados, setProdutosFiltrados] = useState<Produto[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   // Estado do formulário
   const [fornecedorId, setFornecedorId] = useState<string>("")
@@ -70,40 +89,19 @@ export default function NovoPedidoPage() {
     setItemTamanhos(tamanhos)
   }, [])
 
-  // Carregar dados iniciais apenas uma vez
   useEffect(() => {
-    if (dadosCarregados) return
-
     const carregarDados = async () => {
       setIsLoading(true)
       try {
-        console.log("Carregando dados iniciais...")
-        const [fornecedoresData, categoriasData] = await Promise.all([getFornecedores(), getCategorias()])
+        const [fornecedoresData, categoriasData, produtosData] = await Promise.all([
+          getFornecedores(),
+          getCategorias(),
+          getProdutos(),
+        ])
         setFornecedores(fornecedoresData)
         setCategorias(categoriasData)
-        setDadosCarregados(true)
-
-        // Verificar se há parâmetros de produto pré-selecionado
-        const produtoNome = searchParams.get("produto")
-        const produtoCategoria = searchParams.get("categoria")
-        const produtoTipo = searchParams.get("tipo") as "unidade" | "par" | null
-
-        if (produtoNome) {
-          setItemNome(produtoNome)
-
-          // Se tiver categoria, encontrar o ID da categoria
-          if (produtoCategoria && categoriasData.length > 0) {
-            const categoria = categoriasData.find((c) => c.nome === produtoCategoria)
-            if (categoria) {
-              setItemCategoria(categoria.id.toString())
-            }
-          }
-
-          // Se tiver tipo, definir o tipo de estoque
-          if (produtoTipo && (produtoTipo === "unidade" || produtoTipo === "par")) {
-            setItemTipoEstoque(produtoTipo)
-          }
-        }
+        setProdutos(produtosData)
+        setProdutosFiltrados(produtosData)
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
         toast({
@@ -117,7 +115,36 @@ export default function NovoPedidoPage() {
     }
 
     carregarDados()
-  }, [toast, searchParams, dadosCarregados])
+  }, [toast])
+
+  // Filtrar produtos com base no termo de busca
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setProdutosFiltrados(produtos)
+    } else {
+      const filtered = produtos.filter(
+        (produto) =>
+          produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          produto.categoria.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+      setProdutosFiltrados(filtered)
+    }
+  }, [searchTerm, produtos])
+
+  // Selecionar um produto existente
+  const selecionarProduto = (produto: Produto) => {
+    setItemNome(produto.nome)
+    setItemTipoEstoque(produto.tipo_estoque as "unidade" | "par")
+    setItemPreco(produto.preco.toString().replace(".", ","))
+
+    // Encontrar o ID da categoria
+    const categoria = categorias.find((c) => c.nome === produto.categoria)
+    if (categoria) {
+      setItemCategoria(categoria.id.toString())
+    }
+
+    setDialogOpen(false)
+  }
 
   // Calcular o total do pedido
   const calcularTotal = () => {
@@ -496,120 +523,271 @@ export default function NovoPedidoPage() {
             <Card className="mb-6">
               <CardContent className="p-6">
                 <h2 className="text-lg font-medium mb-4">Adicionar Produtos</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="item-nome">Nome do Produto</Label>
-                    <Input
-                      id="item-nome"
-                      placeholder="Nome do produto"
-                      value={itemNome}
-                      onChange={(e) => setItemNome(e.target.value)}
-                    />
-                  </div>
 
-                  <div>
-                    <Label htmlFor="item-categoria">Categoria</Label>
-                    <Select value={itemCategoria} onValueChange={setItemCategoria}>
-                      <SelectTrigger id="item-categoria">
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categorias.map((categoria) => (
-                          <SelectItem key={categoria.id} value={categoria.id.toString()}>
-                            {categoria.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <Tabs defaultValue="novo" className="mb-6">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="novo">Novo Produto</TabsTrigger>
+                    <TabsTrigger value="existente">Produto Existente</TabsTrigger>
+                  </TabsList>
 
-                  <div>
-                    <Label>Tipo de Estoque</Label>
-                    <RadioGroup
-                      value={itemTipoEstoque}
-                      onValueChange={(value) => setItemTipoEstoque(value as "unidade" | "par")}
-                      className="flex space-x-4 mt-2"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="unidade" id="tipo-unidade" />
-                        <Label htmlFor="tipo-unidade" className="flex items-center cursor-pointer">
-                          <LucidePackage className="h-4 w-4 mr-1" /> Unidade
-                        </Label>
+                  <TabsContent value="novo">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="item-nome">Nome do Produto</Label>
+                        <Input
+                          id="item-nome"
+                          placeholder="Nome do produto"
+                          value={itemNome}
+                          onChange={(e) => setItemNome(e.target.value)}
+                        />
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="par" id="tipo-par" />
-                        <Label htmlFor="tipo-par" className="flex items-center cursor-pointer">
-                          <LucideCalendar className="h-4 w-4 mr-1" /> Par
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
 
-                  {itemTipoEstoque === "unidade" ? (
-                    <div>
-                      <Label htmlFor="item-quantidade">Quantidade</Label>
-                      <Input
-                        id="item-quantidade"
-                        type="number"
-                        min="1"
-                        value={itemQuantidade}
-                        onChange={(e) => setItemQuantidade(e.target.value)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="md:col-span-2">
-                      <Label>Tamanhos e Quantidades</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
-                        {itemTamanhos.map((tamanho) => (
-                          <div key={tamanho.tamanho} className="border rounded-md p-2">
-                            <div className="flex items-center mb-1">
-                              <Checkbox
-                                id={`tamanho-${tamanho.tamanho}`}
-                                checked={tamanho.selecionado}
-                                onCheckedChange={(checked) =>
-                                  atualizarSelecaoTamanho(tamanho.tamanho, checked === true)
-                                }
-                              />
-                              <Label
-                                htmlFor={`tamanho-${tamanho.tamanho}`}
-                                className="ml-2 cursor-pointer text-sm font-medium"
-                              >
-                                Tamanho {tamanho.tamanho}
-                              </Label>
-                            </div>
-                            {tamanho.selecionado && (
-                              <Input
-                                type="number"
-                                min="1"
-                                value={tamanho.quantidade || ""}
-                                onChange={(e) =>
-                                  atualizarQuantidadeTamanho(tamanho.tamanho, Number.parseInt(e.target.value) || 0)
-                                }
-                                className="mt-1 h-8 text-sm"
-                                placeholder="Qtd"
-                              />
-                            )}
+                      <div>
+                        <Label htmlFor="item-categoria">Categoria</Label>
+                        <Select value={itemCategoria} onValueChange={setItemCategoria}>
+                          <SelectTrigger id="item-categoria">
+                            <SelectValue placeholder="Selecione uma categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categorias.map((categoria) => (
+                              <SelectItem key={categoria.id} value={categoria.id.toString()}>
+                                {categoria.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Tipo de Estoque</Label>
+                        <RadioGroup
+                          value={itemTipoEstoque}
+                          onValueChange={(value) => setItemTipoEstoque(value as "unidade" | "par")}
+                          className="flex space-x-4 mt-2"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="unidade" id="tipo-unidade" />
+                            <Label htmlFor="tipo-unidade" className="flex items-center cursor-pointer">
+                              <LucidePackage className="h-4 w-4 mr-1" /> Unidade
+                            </Label>
                           </div>
-                        ))}
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="par" id="tipo-par" />
+                            <Label htmlFor="tipo-par" className="flex items-center cursor-pointer">
+                              <LucideCalendar className="h-4 w-4 mr-1" /> Par
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {itemTipoEstoque === "unidade" ? (
+                        <div>
+                          <Label htmlFor="item-quantidade">Quantidade</Label>
+                          <Input
+                            id="item-quantidade"
+                            type="number"
+                            min="1"
+                            value={itemQuantidade}
+                            onChange={(e) => setItemQuantidade(e.target.value)}
+                          />
+                        </div>
+                      ) : (
+                        <div className="md:col-span-2">
+                          <Label>Tamanhos e Quantidades</Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
+                            {itemTamanhos.map((tamanho) => (
+                              <div key={tamanho.tamanho} className="border rounded-md p-2">
+                                <div className="flex items-center mb-1">
+                                  <Checkbox
+                                    id={`tamanho-${tamanho.tamanho}`}
+                                    checked={tamanho.selecionado}
+                                    onCheckedChange={(checked) =>
+                                      atualizarSelecaoTamanho(tamanho.tamanho, checked === true)
+                                    }
+                                  />
+                                  <Label
+                                    htmlFor={`tamanho-${tamanho.tamanho}`}
+                                    className="ml-2 cursor-pointer text-sm font-medium"
+                                  >
+                                    Tamanho {tamanho.tamanho}
+                                  </Label>
+                                </div>
+                                {tamanho.selecionado && (
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={tamanho.quantidade || ""}
+                                    onChange={(e) =>
+                                      atualizarQuantidadeTamanho(tamanho.tamanho, Number.parseInt(e.target.value) || 0)
+                                    }
+                                    className="mt-1 h-8 text-sm"
+                                    placeholder="Qtd"
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="item-preco">Preço Unitário (R$)</Label>
+                        <Input
+                          id="item-preco"
+                          placeholder="0,00"
+                          value={itemPreco}
+                          onChange={(e) => setItemPreco(e.target.value)}
+                        />
                       </div>
                     </div>
-                  )}
+                  </TabsContent>
 
-                  <div>
-                    <Label htmlFor="item-preco">Preço Unitário (R$)</Label>
-                    <Input
-                      id="item-preco"
-                      placeholder="0,00"
-                      value={itemPreco}
-                      onChange={(e) => setItemPreco(e.target.value)}
-                    />
-                  </div>
+                  <TabsContent value="existente">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="relative flex-grow">
+                          <LucideSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                          <Input
+                            placeholder="Buscar produtos existentes..."
+                            className="pl-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="flex items-end">
-                    <Button onClick={adicionarItem} type="button">
-                      <LucidePlus className="h-4 w-4 mr-2" /> Adicionar Item
-                    </Button>
-                  </div>
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="max-h-60 overflow-y-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 sticky top-0">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Nome
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Categoria
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Tipo
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Preço
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Ação
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {produtosFiltrados.length === 0 ? (
+                                <tr>
+                                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                                    Nenhum produto encontrado
+                                  </td>
+                                </tr>
+                              ) : (
+                                produtosFiltrados.map((produto) => (
+                                  <tr key={produto.id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                      {produto.nome}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                      {produto.categoria}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                      <Badge variant="outline">
+                                        {produto.tipo_estoque === "unidade" ? "Unidade" : "Par"}
+                                      </Badge>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                      {formatarPreco(produto.preco)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => selecionarProduto(produto)}
+                                        className="text-blue-600 hover:text-blue-800"
+                                      >
+                                        <LucideShoppingCart className="h-4 w-4 mr-1" /> Selecionar
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {itemNome && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-800 font-medium">
+                            Produto selecionado: <span className="font-bold">{itemNome}</span>
+                          </p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            Complete as informações de quantidade e adicione ao pedido.
+                          </p>
+                        </div>
+                      )}
+
+                      {itemTipoEstoque === "unidade" ? (
+                        <div>
+                          <Label htmlFor="item-quantidade-existente">Quantidade</Label>
+                          <Input
+                            id="item-quantidade-existente"
+                            type="number"
+                            min="1"
+                            value={itemQuantidade}
+                            onChange={(e) => setItemQuantidade(e.target.value)}
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <Label>Tamanhos e Quantidades</Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
+                            {itemTamanhos.map((tamanho) => (
+                              <div key={tamanho.tamanho} className="border rounded-md p-2">
+                                <div className="flex items-center mb-1">
+                                  <Checkbox
+                                    id={`tamanho-existente-${tamanho.tamanho}`}
+                                    checked={tamanho.selecionado}
+                                    onCheckedChange={(checked) =>
+                                      atualizarSelecaoTamanho(tamanho.tamanho, checked === true)
+                                    }
+                                  />
+                                  <Label
+                                    htmlFor={`tamanho-existente-${tamanho.tamanho}`}
+                                    className="ml-2 cursor-pointer text-sm font-medium"
+                                  >
+                                    Tamanho {tamanho.tamanho}
+                                  </Label>
+                                </div>
+                                {tamanho.selecionado && (
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={tamanho.quantidade || ""}
+                                    onChange={(e) =>
+                                      atualizarQuantidadeTamanho(tamanho.tamanho, Number.parseInt(e.target.value) || 0)
+                                    }
+                                    className="mt-1 h-8 text-sm"
+                                    placeholder="Qtd"
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                <div className="flex justify-end mt-4">
+                  <Button onClick={adicionarItem} type="button" disabled={!itemNome || !itemCategoria}>
+                    <LucidePlus className="h-4 w-4 mr-2" /> Adicionar Item
+                  </Button>
                 </div>
 
                 {itens.length > 0 && (
