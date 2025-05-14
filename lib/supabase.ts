@@ -142,6 +142,7 @@ export type ItemPedido = {
   quantidade: number
   preco_unitario: number
   categoria: string
+  tamanhos?: { tamanho: number; quantidade: number }[] // Adicionado campo tamanhos
   created_at?: string
 }
 
@@ -1517,9 +1518,35 @@ export async function getPedidoById(id: number) {
       return null
     }
 
+    // Buscar tamanhos dos itens do pedido
+    const { data: tamanhos, error: tamanhosError } = await supabase
+      .from("tamanhos_item_pedido")
+      .select("*")
+      .eq("pedido_id", id)
+
+    if (tamanhosError) {
+      console.error("Erro ao buscar tamanhos dos itens do pedido:", tamanhosError)
+      // Não falhar completamente se não conseguir carregar os tamanhos
+    }
+
+    // Associar tamanhos aos itens
+    const itensComTamanhos = itens?.map((item) => {
+      if (item.tipo_estoque === "par" && tamanhos) {
+        const tamanhosFiltrados = tamanhos.filter((t) => t.item_pedido_id === item.id)
+        return {
+          ...item,
+          tamanhos: tamanhosFiltrados.map((t) => ({
+            tamanho: t.tamanho,
+            quantidade: t.quantidade,
+          })),
+        }
+      }
+      return item
+    })
+
     return {
       ...pedido,
-      itens: itens || [],
+      itens: itensComTamanhos || [],
       parcelas: parcelas || [],
     }
   } catch (error) {
@@ -1558,20 +1585,43 @@ export async function addPedido(
 
     // Inserir os itens do pedido
     if (itens.length > 0) {
-      const itensParaInserir = itens.map((item) => ({
-        pedido_id: pedidoId,
-        nome: item.nome,
-        tipo_estoque: item.tipo_estoque,
-        quantidade: item.quantidade,
-        preco_unitario: item.preco_unitario,
-        categoria: item.categoria,
-      }))
+      for (const item of itens) {
+        // Inserir o item
+        const { data: itemInserido, error: itemError } = await supabase
+          .from("itens_pedido")
+          .insert([
+            {
+              pedido_id: pedidoId,
+              nome: item.nome,
+              tipo_estoque: item.tipo_estoque,
+              quantidade: item.quantidade,
+              preco_unitario: item.preco_unitario,
+              categoria: item.categoria,
+            },
+          ])
+          .select()
 
-      const { error: itensError } = await supabase.from("itens_pedido").insert(itensParaInserir)
+        if (itemError) {
+          console.error("Erro ao adicionar item do pedido:", itemError)
+          throw itemError
+        }
 
-      if (itensError) {
-        console.error("Erro ao adicionar itens do pedido:", itensError)
-        throw itensError
+        // Se o item for do tipo "par" e tiver tamanhos, inserir os tamanhos
+        if (item.tipo_estoque === "par" && item.tamanhos && item.tamanhos.length > 0 && itemInserido) {
+          const tamanhosPedido = item.tamanhos.map((t) => ({
+            pedido_id: pedidoId,
+            item_pedido_id: itemInserido[0].id,
+            tamanho: t.tamanho,
+            quantidade: t.quantidade,
+          }))
+
+          const { error: tamanhoError } = await supabase.from("tamanhos_item_pedido").insert(tamanhosPedido)
+
+          if (tamanhoError) {
+            console.error("Erro ao adicionar tamanhos do item:", tamanhoError)
+            throw tamanhoError
+          }
+        }
       }
     }
 
@@ -1635,9 +1685,6 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
         throw new Error("Fornecedor não encontrado")
       }
 
-      // Localizar a parte da função updatePedidoStatus que distribui o estoque entre os tamanhos
-      // Substituir o trecho que começa com "// Adicionar os produtos ao estoque" por este código atualizado:
-
       // Adicionar os produtos ao estoque
       for (const item of pedidoCompleto.itens) {
         // Verificar se o produto já existe
@@ -1653,12 +1700,11 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
         const categoriaNome = categoriaData ? categoriaData.nome : item.categoria
 
         if (produtosExistentes && produtosExistentes.length > 0) {
-          // Atualizar o estoque do produto existente
+          // Atualizar o produto existente
           const produto = produtosExistentes[0]
 
           if (item.tipo_estoque === "par") {
-            // Para produtos do tipo "par", distribuir a quantidade uniformemente entre os tamanhos 34 a 43
-            // Primeiro, atualizar o produto
+            // Para produtos do tipo "par", atualizar o produto
             await supabase
               .from("produtos")
               .update({
@@ -1668,32 +1714,25 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
               })
               .eq("id", produto.id)
 
-            // Definir os tamanhos padrão para calçados
-            const tamanhosPadrao = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43]
-            const quantidadePorTamanho = Math.floor(item.quantidade / tamanhosPadrao.length)
-            const resto = item.quantidade % tamanhosPadrao.length
+            // Verificar se o item tem tamanhos específicos
+            if (item.tamanhos && item.tamanhos.length > 0) {
+              console.log(`Produto ${item.nome} tem ${item.tamanhos.length} tamanhos específicos:`, item.tamanhos)
 
-            // Verificar se já existem registros de estoque por tamanho
-            const { data: estoqueTamanhos } = await supabase
-              .from("estoque_tamanhos")
-              .select("*")
-              .eq("produto_id", produto.id)
-
-            console.log(
-              `Distribuindo ${item.quantidade} unidades entre ${tamanhosPadrao.length} tamanhos. Cada tamanho receberá ${quantidadePorTamanho} unidades, com ${resto} de resto para o tamanho 38.`,
-            )
-
-            if (estoqueTamanhos && estoqueTamanhos.length > 0) {
-              // Atualizar os registros existentes
-              for (const tamanho of tamanhosPadrao) {
-                const estoqueTamanho = estoqueTamanhos.find((et) => et.tamanho === tamanho)
-                const quantidadeAdicional = tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho
+              // Atualizar os tamanhos específicos
+              for (const tamanhoItem of item.tamanhos) {
+                // Verificar se já existe registro para este tamanho
+                const { data: estoqueTamanho } = await supabase
+                  .from("estoque_tamanhos")
+                  .select("*")
+                  .eq("produto_id", produto.id)
+                  .eq("tamanho", tamanhoItem.tamanho)
+                  .single()
 
                 if (estoqueTamanho) {
-                  // Adicionar quantidade ao tamanho existente
-                  const novaQuantidade = estoqueTamanho.quantidade + quantidadeAdicional
+                  // Atualizar o estoque do tamanho existente
+                  const novaQuantidade = estoqueTamanho.quantidade + tamanhoItem.quantidade
                   console.log(
-                    `Atualizando tamanho ${tamanho}: ${estoqueTamanho.quantidade} + ${quantidadeAdicional} = ${novaQuantidade}`,
+                    `Atualizando tamanho ${tamanhoItem.tamanho}: ${estoqueTamanho.quantidade} + ${tamanhoItem.quantidade} = ${novaQuantidade}`,
                   )
 
                   await supabase
@@ -1702,36 +1741,82 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
                     .eq("id", estoqueTamanho.id)
                 } else {
                   // Criar novo registro para este tamanho
-                  console.log(`Criando novo registro para tamanho ${tamanho} com quantidade ${quantidadeAdicional}`)
+                  console.log(
+                    `Criando novo registro para tamanho ${tamanhoItem.tamanho} com quantidade ${tamanhoItem.quantidade}`,
+                  )
 
                   await supabase.from("estoque_tamanhos").insert({
                     produto_id: produto.id,
-                    tamanho,
-                    quantidade: quantidadeAdicional,
+                    tamanho: tamanhoItem.tamanho,
+                    quantidade: tamanhoItem.quantidade,
                   })
                 }
               }
             } else {
-              // Criar novos registros de estoque por tamanho
-              const estoquesParaInserir = tamanhosPadrao.map((tamanho) => ({
-                produto_id: produto.id,
-                tamanho,
-                quantidade: tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho, // Adicionar o resto ao tamanho 38
-              }))
+              // Se não tiver tamanhos específicos, distribuir uniformemente (comportamento antigo)
+              console.log(`Produto ${item.nome} não tem tamanhos específicos, distribuindo uniformemente`)
 
-              console.log(
-                `Inserindo registros de estoque para ${estoquesParaInserir.length} tamanhos:`,
-                estoquesParaInserir,
-              )
+              // Definir os tamanhos padrão para calçados
+              const tamanhosPadrao = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43]
+              const quantidadePorTamanho = Math.floor(item.quantidade / tamanhosPadrao.length)
+              const resto = item.quantidade % tamanhosPadrao.length
 
-              const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
+              // Verificar se já existem registros de estoque por tamanho
+              const { data: estoqueTamanhos } = await supabase
+                .from("estoque_tamanhos")
+                .select("*")
+                .eq("produto_id", produto.id)
 
-              if (error) {
-                console.error("Erro ao inserir estoque por tamanho:", error)
-                throw error
+              if (estoqueTamanhos && estoqueTamanhos.length > 0) {
+                // Atualizar os registros existentes
+                for (const tamanho of tamanhosPadrao) {
+                  const estoqueTamanho = estoqueTamanhos.find((et) => et.tamanho === tamanho)
+                  const quantidadeAdicional = tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho
+
+                  if (estoqueTamanho) {
+                    // Adicionar quantidade ao tamanho existente
+                    const novaQuantidade = estoqueTamanho.quantidade + quantidadeAdicional
+                    console.log(
+                      `Atualizando tamanho ${tamanho}: ${estoqueTamanho.quantidade} + ${quantidadeAdicional} = ${novaQuantidade}`,
+                    )
+
+                    await supabase
+                      .from("estoque_tamanhos")
+                      .update({ quantidade: novaQuantidade })
+                      .eq("id", estoqueTamanho.id)
+                  } else {
+                    // Criar novo registro para este tamanho
+                    console.log(`Criando novo registro para tamanho ${tamanho} com quantidade ${quantidadeAdicional}`)
+
+                    await supabase.from("estoque_tamanhos").insert({
+                      produto_id: produto.id,
+                      tamanho,
+                      quantidade: quantidadeAdicional,
+                    })
+                  }
+                }
+              } else {
+                // Criar novos registros de estoque por tamanho
+                const estoquesParaInserir = tamanhosPadrao.map((tamanho) => ({
+                  produto_id: produto.id,
+                  tamanho,
+                  quantidade: tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho, // Adicionar o resto ao tamanho 38
+                }))
+
+                console.log(
+                  `Inserindo registros de estoque para ${estoquesParaInserir.length} tamanhos:`,
+                  estoquesParaInserir,
+                )
+
+                const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
+
+                if (error) {
+                  console.error("Erro ao inserir estoque por tamanho:", error)
+                  throw error
+                }
+
+                console.log("Registros de estoque inseridos com sucesso:", data)
               }
-
-              console.log("Registros de estoque inseridos com sucesso:", data)
             }
 
             // Atualizar o estoque total do produto
@@ -1773,31 +1858,56 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
 
           // Se for produto do tipo "par", criar registros de estoque por tamanho
           if (item.tipo_estoque === "par" && novoProduto && novoProduto.length > 0) {
-            // Distribuir a quantidade uniformemente entre os tamanhos 34 a 43
-            const tamanhosPadrao = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43]
-            const quantidadePorTamanho = Math.floor(item.quantidade / tamanhosPadrao.length)
-            const resto = item.quantidade % tamanhosPadrao.length
+            if (item.tamanhos && item.tamanhos.length > 0) {
+              // Se tiver tamanhos específicos, usar esses tamanhos
+              console.log(`Novo produto ${item.nome} com ${item.tamanhos.length} tamanhos específicos:`, item.tamanhos)
 
-            console.log(
-              `Novo produto: Distribuindo ${item.quantidade} unidades entre ${tamanhosPadrao.length} tamanhos. Cada tamanho receberá ${quantidadePorTamanho} unidades, com ${resto} de resto para o tamanho 38.`,
-            )
+              const estoquesParaInserir = item.tamanhos.map((t) => ({
+                produto_id: novoProduto[0].id,
+                tamanho: t.tamanho,
+                quantidade: t.quantidade,
+              }))
 
-            const estoquesParaInserir = tamanhosPadrao.map((tamanho) => ({
-              produto_id: novoProduto[0].id,
-              tamanho,
-              quantidade: tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho, // Adicionar o resto ao tamanho 38
-            }))
+              console.log(`Inserindo registros de estoque para novo produto:`, estoquesParaInserir)
 
-            console.log(`Inserindo registros de estoque para novo produto:`, estoquesParaInserir)
+              const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
 
-            const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
+              if (error) {
+                console.error("Erro ao inserir estoque por tamanho para novo produto:", error)
+                throw error
+              }
 
-            if (error) {
-              console.error("Erro ao inserir estoque por tamanho para novo produto:", error)
-              throw error
+              console.log("Registros de estoque para novo produto inseridos com sucesso:", data)
+            } else {
+              // Se não tiver tamanhos específicos, distribuir uniformemente
+              console.log(`Novo produto ${item.nome} sem tamanhos específicos, distribuindo uniformemente`)
+
+              // Distribuir a quantidade uniformemente entre os tamanhos 34 a 43
+              const tamanhosPadrao = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43]
+              const quantidadePorTamanho = Math.floor(item.quantidade / tamanhosPadrao.length)
+              const resto = item.quantidade % tamanhosPadrao.length
+
+              console.log(
+                `Novo produto: Distribuindo ${item.quantidade} unidades entre ${tamanhosPadrao.length} tamanhos. Cada tamanho receberá ${quantidadePorTamanho} unidades, com ${resto} de resto para o tamanho 38.`,
+              )
+
+              const estoquesParaInserir = tamanhosPadrao.map((tamanho) => ({
+                produto_id: novoProduto[0].id,
+                tamanho,
+                quantidade: tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho, // Adicionar o resto ao tamanho 38
+              }))
+
+              console.log(`Inserindo registros de estoque para novo produto:`, estoquesParaInserir)
+
+              const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
+
+              if (error) {
+                console.error("Erro ao inserir estoque por tamanho para novo produto:", error)
+                throw error
+              }
+
+              console.log("Registros de estoque para novo produto inseridos com sucesso:", data)
             }
-
-            console.log("Registros de estoque para novo produto inseridos com sucesso:", data)
           }
         }
       }
