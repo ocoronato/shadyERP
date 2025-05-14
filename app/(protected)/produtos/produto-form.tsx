@@ -49,38 +49,22 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
         const categoriasData = await getCategorias()
         setCategorias(categoriasData)
 
-        if (produto?.id) {
-          console.log("Carregando produto:", produto)
-
-          if (produto.tipo_estoque === "par") {
-            try {
-              console.log("Carregando estoque por tamanho para produto:", produto.id)
-              const estoqueTamanhosData = await getEstoqueTamanhos(produto.id)
-              console.log("Estoque por tamanho carregado:", estoqueTamanhosData)
-
-              if (estoqueTamanhosData && estoqueTamanhosData.length > 0) {
-                setEstoqueTamanhos(
-                  estoqueTamanhosData.map((et) => ({
-                    tamanho: et.tamanho,
-                    quantidade: et.quantidade,
-                  })),
-                )
-              } else {
-                // Se não houver dados de estoque por tamanho, inicializar com tamanhos padrão
-                inicializarTamanhosPadrao()
-              }
-            } catch (error) {
-              console.error("Erro ao carregar estoque por tamanho:", error)
-              // Em caso de erro, inicializar com tamanhos padrão
-              inicializarTamanhosPadrao()
-            }
-          } else {
-            // Inicializar estoque de tamanhos vazio para produtos do tipo "unidade"
-            inicializarTamanhosPadrao()
-          }
+        if (produto?.id && produto.tipo_estoque === "par") {
+          const estoqueTamanhosData = await getEstoqueTamanhos(produto.id)
+          setEstoqueTamanhos(
+            estoqueTamanhosData.map((et) => ({
+              tamanho: et.tamanho,
+              quantidade: et.quantidade,
+            })),
+          )
         } else {
-          // Inicializar estoque de tamanhos vazio para novos produtos
-          inicializarTamanhosPadrao()
+          // Inicializar estoque de tamanhos vazio
+          setEstoqueTamanhos(
+            tamanhos.map((tamanho) => ({
+              tamanho,
+              quantidade: 0,
+            })),
+          )
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error)
@@ -89,8 +73,6 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
           description: "Não foi possível carregar os dados necessários.",
           variant: "destructive",
         })
-        // Inicializar com valores padrão em caso de erro
-        inicializarTamanhosPadrao()
       } finally {
         setIsLoading(false)
       }
@@ -98,17 +80,6 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
 
     carregarDados()
   }, [produto, toast])
-
-  // Função para inicializar tamanhos padrão
-  const inicializarTamanhosPadrao = () => {
-    const tamanhosPadrao = Array.from({ length: 50 }, (_, i) => i + 1)
-    setEstoqueTamanhos(
-      tamanhosPadrao.map((tamanho) => ({
-        tamanho,
-        quantidade: 0,
-      })),
-    )
-  }
 
   useEffect(() => {
     if (produto) {
@@ -218,12 +189,6 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     return <div className="p-4 text-center">Carregando dados...</div>
   }
 
-  // Filtrar tamanhos para mostrar apenas os que têm estoque ou são relevantes (34-43 para calçados)
-  const tamanhosFiltrados =
-    formData.tipo_estoque === "par"
-      ? estoqueTamanhos.filter((et) => et.quantidade > 0 || (et.tamanho >= 34 && et.tamanho <= 43))
-      : estoqueTamanhos
-
   return (
     <form onSubmit={handleSubmit}>
       <h2 className="text-lg font-medium mb-4">{produto ? "Editar Produto" : "Novo Produto"}</h2>
@@ -318,45 +283,41 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
 
                 <TabsContent value="grid" className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {tamanhosFiltrados
-                      .sort((a, b) => a.tamanho - b.tamanho)
-                      .map((et) => (
-                        <div key={et.tamanho} className="border rounded p-2">
-                          <Label htmlFor={`tamanho-${et.tamanho}`} className="text-sm font-medium block mb-1">
-                            Tamanho {et.tamanho}
-                          </Label>
-                          <Input
-                            id={`tamanho-${et.tamanho}`}
-                            type="number"
-                            min="0"
-                            value={et.quantidade.toString()}
-                            onChange={(e) => handleTamanhoQuantidadeChange(et.tamanho, e.target.value)}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                      ))}
+                    {estoqueTamanhos.map((et) => (
+                      <div key={et.tamanho} className="border rounded p-2">
+                        <Label htmlFor={`tamanho-${et.tamanho}`} className="text-sm font-medium block mb-1">
+                          Tamanho {et.tamanho}
+                        </Label>
+                        <Input
+                          id={`tamanho-${et.tamanho}`}
+                          type="number"
+                          min="0"
+                          value={et.quantidade.toString()}
+                          onChange={(e) => handleTamanhoQuantidadeChange(et.tamanho, e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="list">
                   <div className="space-y-2">
-                    {tamanhosFiltrados
-                      .sort((a, b) => a.tamanho - b.tamanho)
-                      .map((et) => (
-                        <div key={et.tamanho} className="flex items-center space-x-2">
-                          <Label htmlFor={`tamanho-list-${et.tamanho}`} className="w-24">
-                            Tamanho {et.tamanho}:
-                          </Label>
-                          <Input
-                            id={`tamanho-list-${et.tamanho}`}
-                            type="number"
-                            min="0"
-                            value={et.quantidade.toString()}
-                            onChange={(e) => handleTamanhoQuantidadeChange(et.tamanho, e.target.value)}
-                            className="w-24"
-                          />
-                        </div>
-                      ))}
+                    {estoqueTamanhos.map((et) => (
+                      <div key={et.tamanho} className="flex items-center space-x-2">
+                        <Label htmlFor={`tamanho-list-${et.tamanho}`} className="w-24">
+                          Tamanho {et.tamanho}:
+                        </Label>
+                        <Input
+                          id={`tamanho-list-${et.tamanho}`}
+                          type="number"
+                          min="0"
+                          value={et.quantidade.toString()}
+                          onChange={(e) => handleTamanhoQuantidadeChange(et.tamanho, e.target.value)}
+                          className="w-24"
+                        />
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
               </Tabs>

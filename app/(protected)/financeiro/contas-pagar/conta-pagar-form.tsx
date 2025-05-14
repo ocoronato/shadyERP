@@ -24,7 +24,7 @@ export default function ContaPagarForm({ conta, onSave, onCancel }: ContaPagarFo
     data_vencimento: "",
     data_pagamento: "",
     status: "Pendente",
-    fornecedor: "", // Alterado de fornecedor_id para fornecedor
+    fornecedor_id: "", // Alterado para fornecedor_id
     observacao: "",
   })
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
@@ -61,7 +61,7 @@ export default function ContaPagarForm({ conta, onSave, onCancel }: ContaPagarFo
         data_vencimento: conta.data_vencimento || "",
         data_pagamento: conta.data_pagamento || "",
         status: conta.status || "Pendente",
-        fornecedor: conta.fornecedor || "", // Alterado de fornecedor_id para fornecedor
+        fornecedor_id: conta.fornecedor_id ? conta.fornecedor_id.toString() : "",
         observacao: conta.observacao || "",
       })
     } else {
@@ -99,7 +99,7 @@ export default function ContaPagarForm({ conta, onSave, onCancel }: ContaPagarFo
         data_vencimento: formData.data_vencimento,
         data_pagamento: formData.data_pagamento || null,
         status: formData.status,
-        fornecedor: formData.fornecedor || null, // Alterado de fornecedor_id para fornecedor
+        fornecedor_id: formData.fornecedor_id ? Number.parseInt(formData.fornecedor_id) : null,
         observacao: formData.observacao || null,
       }
 
@@ -146,10 +146,10 @@ export default function ContaPagarForm({ conta, onSave, onCancel }: ContaPagarFo
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="fornecedor">Fornecedor</Label>
+          <Label htmlFor="fornecedor_id">Fornecedor</Label>
           <Select
-            value={formData.fornecedor}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, fornecedor: value }))}
+            value={formData.fornecedor_id}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, fornecedor_id: value }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione um fornecedor" />
@@ -157,7 +157,7 @@ export default function ContaPagarForm({ conta, onSave, onCancel }: ContaPagarFo
             <SelectContent>
               <SelectItem value="none">Nenhum</SelectItem>
               {fornecedores.map((fornecedor) => (
-                <SelectItem key={fornecedor.id} value={fornecedor.razao_social}>
+                <SelectItem key={fornecedor.id} value={fornecedor.id.toString()}>
                   {fornecedor.razao_social}
                 </SelectItem>
               ))}

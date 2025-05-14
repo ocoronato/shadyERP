@@ -73,10 +73,11 @@ export default function ContasPagar() {
     carregarDados()
   }, [filtroDataInicio, filtroDataFim])
 
-  // Função para obter o nome do fornecedor
-  const getNomeFornecedor = (fornecedor: string | null | undefined) => {
-    if (!fornecedor) return "-"
-    return fornecedor
+  // Função para obter o nome do fornecedor pelo ID
+  const getNomeFornecedor = (fornecedorId: number | null | undefined) => {
+    if (!fornecedorId) return "-"
+    const fornecedor = fornecedores.find((f) => f.id === fornecedorId)
+    return fornecedor ? fornecedor.razao_social : "-"
   }
 
   const contasFiltradas = contas.filter((conta) => {

@@ -87,7 +87,7 @@ export type ContaPagar = {
   data_vencimento: string
   data_pagamento?: string
   status: string
-  fornecedor?: string // Alterado de fornecedor_id para fornecedor
+  fornecedor_id?: number // Alterado de fornecedor para fornecedor_id
   observacao?: string
   created_at?: string
 }
@@ -118,48 +118,7 @@ export type Fornecedor = {
   created_at?: string
 }
 
-// Adicionar os novos tipos após os tipos existentes
-// Adicionar após o tipo Fornecedor
-
-// Adicionar os tipos para pedidos
-export type Pedido = {
-  id: number
-  fornecedor_id: number
-  descricao: string
-  data_pedido: string
-  status: "Pendente" | "Recebido" | "Cancelado"
-  nota_fiscal?: string
-  total: number
-  parcelas: number
-  created_at?: string
-}
-
-export type ItemPedido = {
-  id?: number
-  pedido_id?: number
-  nome: string
-  tipo_estoque: "unidade" | "par"
-  quantidade: number
-  preco_unitario: number
-  categoria: string
-  tamanhos?: { tamanho: number; quantidade: number }[] // Adicionado campo tamanhos
-  created_at?: string
-}
-
-export type ParcelaPedido = {
-  id?: number
-  pedido_id?: number
-  numero_parcela: number
-  data_vencimento: string
-  valor: number
-  created_at?: string
-}
-
 // Função para verificar se as tabelas existem
-// Primeiro, vamos verificar se a tabela tamanhos_item_pedido existe no banco de dados
-// Adicione esta verificação na função checkTablesExist()
-
-// Localizar a função checkTablesExist() e adicionar a verificação da tabela tamanhos_item_pedido
 export async function checkTablesExist() {
   try {
     // Verificar se a tabela clientes existe
@@ -194,10 +153,6 @@ export async function checkTablesExist() {
     const { error: estoqueTamanhosError } = await supabase.from("estoque_tamanhos").select("id").limit(1)
     const estoqueTamanhosExists = !estoqueTamanhosError
 
-    // Verificar se a tabela tamanhos_item_pedido existe
-    const { error: tamanhosPedidoError } = await supabase.from("tamanhos_item_pedido").select("id").limit(1)
-    const tamanhosPedidoExists = !tamanhosPedidoError
-
     return {
       clientesExists,
       produtosExists,
@@ -207,7 +162,6 @@ export async function checkTablesExist() {
       usuariosExists,
       fornecedoresExists,
       estoqueTamanhosExists,
-      tamanhosPedidoExists,
       allExist:
         clientesExists &&
         produtosExists &&
@@ -216,8 +170,7 @@ export async function checkTablesExist() {
         categoriasExists &&
         usuariosExists &&
         fornecedoresExists &&
-        estoqueTamanhosExists &&
-        tamanhosPedidoExists,
+        estoqueTamanhosExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -230,7 +183,6 @@ export async function checkTablesExist() {
       usuariosExists: false,
       fornecedoresExists: false,
       estoqueTamanhosExists: false,
-      tamanhosPedidoExists: false,
       allExist: false,
     }
   }
@@ -314,7 +266,7 @@ export async function deleteCliente(id: number) {
 // Funções para categorias
 export async function getCategorias() {
   try {
-    const { data, error } = await supabase.from("categorias").select("id, nome").order("nome", { ascending: true })
+    const { data, error } = await supabase.from("categorias").select("*").order("nome", { ascending: true })
 
     if (error) {
       console.error("Erro ao buscar categorias:", error)
@@ -395,10 +347,7 @@ export async function deleteCategoria(id: number) {
 // Funções para produtos
 export async function getProdutos() {
   try {
-    const { data, error } = await supabase
-      .from("produtos")
-      .select("id, nome, categoria, preco, estoque, tipo_estoque")
-      .order("id", { ascending: true })
+    const { data, error } = await supabase.from("produtos").select("*").order("id", { ascending: true })
 
     if (error) {
       console.error("Erro ao buscar produtos:", error)
@@ -431,13 +380,6 @@ export async function getProdutoByNome(nome: string) {
 // Adicionar função para buscar estoque por tamanho
 export async function getEstoqueTamanhos(produtoId: number) {
   try {
-    console.log(`Buscando estoque por tamanho para produto ID: ${produtoId}`)
-
-    if (!produtoId || isNaN(produtoId)) {
-      console.error("ID de produto inválido:", produtoId)
-      return []
-    }
-
     const { data, error } = await supabase
       .from("estoque_tamanhos")
       .select("*")
@@ -446,15 +388,12 @@ export async function getEstoqueTamanhos(produtoId: number) {
 
     if (error) {
       console.error("Erro ao buscar estoque por tamanho:", error)
-      throw error
+      return []
     }
-
-    console.log(`Encontrados ${data?.length || 0} registros de estoque por tamanho:`, data)
 
     return data || []
   } catch (error) {
     console.error("Erro ao buscar estoque por tamanho:", error)
-    // Retornar um array vazio em vez de lançar o erro
     return []
   }
 }
@@ -1394,10 +1333,7 @@ export async function deleteContaReceber(id: number) {
 // Funções para fornecedores
 export async function getFornecedores() {
   try {
-    const { data, error } = await supabase
-      .from("fornecedores")
-      .select("id, razao_social")
-      .order("razao_social", { ascending: true })
+    const { data, error } = await supabase.from("fornecedores").select("*").order("razao_social", { ascending: true })
 
     if (error) {
       console.error("Erro ao buscar fornecedores:", error)
@@ -1443,21 +1379,13 @@ export async function updateFornecedor(id: number, fornecedor: Partial<Fornecedo
   }
 }
 
-// Atualizar a função deleteFornecedor para verificar o uso do fornecedor pelo nome
 export async function deleteFornecedor(id: number) {
   try {
-    // Buscar o fornecedor para obter o nome
-    const { data: fornecedor } = await supabase.from("fornecedores").select("razao_social").eq("id", id).single()
-
-    if (!fornecedor) {
-      throw new Error("Fornecedor não encontrado")
-    }
-
     // Verificar se o fornecedor está sendo usado em contas a pagar
     const { data: contas, error: contasError } = await supabase
       .from("contas_pagar")
       .select("id")
-      .eq("fornecedor", fornecedor.razao_social) // Alterado para fornecedor
+      .eq("fornecedor_id", id) // Alterado para fornecedor_id
       .limit(1)
 
     if (contasError) {
@@ -1485,489 +1413,3 @@ export async function deleteFornecedor(id: number) {
 
 // Não é necessário alterar as funções getContasPagar, addContaPagar, updateContaPagar e deleteContaPagar
 // pois elas já lidam com os dados de forma genérica
-
-// Adicionar as funções para pedidos após as funções existentes
-// Adicionar no final do arquivo
-
-// Funções para pedidos
-export async function getPedidos() {
-  try {
-    const { data, error } = await supabase
-      .from("pedidos")
-      .select("id, fornecedor_id, data_pedido, status, total")
-      .order("id", { ascending: false })
-
-    if (error) {
-      console.error("Erro ao buscar pedidos:", error)
-      return []
-    }
-
-    return data || []
-  } catch (error) {
-    console.error("Erro ao buscar pedidos:", error)
-    return []
-  }
-}
-
-// Encontre a função getPedidoById e substitua-a pela versão abaixo:
-
-export async function getPedidoById(id: number) {
-  try {
-    const { data: pedido, error: pedidoError } = await supabase.from("pedidos").select("*").eq("id", id).single()
-
-    if (pedidoError) {
-      console.error("Erro ao buscar pedido:", pedidoError)
-      return null
-    }
-
-    // Buscar itens do pedido
-    const { data: itens, error: itensError } = await supabase.from("itens_pedido").select("*").eq("pedido_id", id)
-
-    if (itensError) {
-      console.error("Erro ao buscar itens do pedido:", itensError)
-      return null
-    }
-
-    // Buscar parcelas do pedido
-    const { data: parcelas, error: parcelasError } = await supabase
-      .from("parcelas_pedido")
-      .select("*")
-      .eq("pedido_id", id)
-      .order("numero_parcela", { ascending: true })
-
-    if (parcelasError) {
-      console.error("Erro ao buscar parcelas do pedido:", parcelasError)
-      return null
-    }
-
-    // Buscar tamanhos dos itens do pedido
-    const { data: tamanhos, error: tamanhosError } = await supabase
-      .from("tamanhos_item_pedido")
-      .select("*")
-      .eq("pedido_id", id)
-
-    if (tamanhosError) {
-      console.error("Erro ao buscar tamanhos dos itens:", tamanhosError)
-      // Não falhar completamente se não conseguir carregar os tamanhos
-    }
-
-    // Associar tamanhos aos itens
-    const itensComTamanhos = itens?.map((item) => {
-      if (item.tipo_estoque === "par" && tamanhos && tamanhos.length > 0) {
-        const tamanhosFiltrados = tamanhos.filter((t) => t.item_pedido_id === item.id)
-        if (tamanhosFiltrados.length > 0) {
-          return {
-            ...item,
-            tamanhos: tamanhosFiltrados.map((t) => ({
-              tamanho: t.tamanho,
-              quantidade: t.quantidade,
-            })),
-          }
-        }
-      }
-      return item
-    })
-
-    console.log("Itens com tamanhos:", itensComTamanhos)
-
-    return {
-      ...pedido,
-      itens: itensComTamanhos || [],
-      parcelas: parcelas || [],
-    }
-  } catch (error) {
-    console.error("Erro ao buscar pedido completo:", error)
-    return null
-  }
-}
-
-// Agora, vamos modificar a função addPedido para garantir que os tamanhos sejam salvos corretamente
-// Substitua a função addPedido pela versão abaixo:
-
-export async function addPedido(
-  pedido: Omit<Pedido, "id">,
-  itens: Omit<ItemPedido, "id" | "pedido_id">[],
-  parcelas: Omit<ParcelaPedido, "id" | "pedido_id">[],
-) {
-  try {
-    console.log("Iniciando criação de pedido:", pedido)
-
-    // Inserir o pedido
-    const { data: pedidoInserido, error: pedidoError } = await supabase
-      .from("pedidos")
-      .insert([
-        {
-          fornecedor_id: pedido.fornecedor_id,
-          descricao: pedido.descricao,
-          data_pedido: pedido.data_pedido,
-          status: pedido.status,
-          total: pedido.total,
-          parcelas: pedido.parcelas,
-        },
-      ])
-      .select()
-
-    if (pedidoError) {
-      console.error("Erro ao adicionar pedido:", pedidoError)
-      throw pedidoError
-    }
-
-    const pedidoId = pedidoInserido[0].id
-    console.log(`Pedido #${pedidoId} criado com sucesso`)
-
-    // Inserir os itens do pedido
-    if (itens.length > 0) {
-      console.log(`Inserindo ${itens.length} itens para o pedido #${pedidoId}`)
-
-      for (const item of itens) {
-        console.log(`Processando item: ${item.nome}`)
-
-        // Inserir o item
-        const { data: itemInserido, error: itemError } = await supabase
-          .from("itens_pedido")
-          .insert([
-            {
-              pedido_id: pedidoId,
-              nome: item.nome,
-              tipo_estoque: item.tipo_estoque,
-              quantidade: item.quantidade,
-              preco_unitario: item.preco_unitario,
-              categoria: item.categoria,
-            },
-          ])
-          .select()
-
-        if (itemError) {
-          console.error("Erro ao adicionar item do pedido:", itemError)
-          throw itemError
-        }
-
-        console.log(`Item ${item.nome} inserido com ID: ${itemInserido[0].id}`)
-
-        // Se o item for do tipo "par" e tiver tamanhos, tentar inserir os tamanhos
-        if (item.tipo_estoque === "par" && item.tamanhos && item.tamanhos.length > 0 && itemInserido) {
-          console.log(`Item ${item.nome} tem ${item.tamanhos.length} tamanhos para inserir:`, item.tamanhos)
-
-          try {
-            const tamanhosPedido = item.tamanhos.map((t) => ({
-              pedido_id: pedidoId,
-              item_pedido_id: itemInserido[0].id,
-              tamanho: t.tamanho,
-              quantidade: t.quantidade,
-            }))
-
-            console.log(`Inserindo tamanhos para o item ${item.nome}:`, tamanhosPedido)
-
-            const { error: tamanhoError } = await supabase.from("tamanhos_item_pedido").insert(tamanhosPedido)
-
-            if (tamanhoError) {
-              console.error("Erro ao adicionar tamanhos do item:", tamanhoError)
-              // Não lançar erro, apenas registrar
-            } else {
-              console.log(`Tamanhos salvos com sucesso para o item ${item.nome}`)
-            }
-          } catch (e) {
-            console.error("Erro ao inserir tamanhos:", e)
-            // Não lançar erro, apenas registrar
-          }
-        }
-      }
-    }
-
-    // Inserir as parcelas do pedido
-    if (parcelas.length > 0) {
-      console.log(`Inserindo ${parcelas.length} parcelas para o pedido #${pedidoId}`)
-
-      const parcelasParaInserir = parcelas.map((parcela) => ({
-        pedido_id: pedidoId,
-        numero_parcela: parcela.numero_parcela,
-        data_vencimento: parcela.data_vencimento,
-        valor: parcela.valor,
-      }))
-
-      const { error: parcelasError } = await supabase.from("parcelas_pedido").insert(parcelasParaInserir)
-
-      if (parcelasError) {
-        console.error("Erro ao adicionar parcelas do pedido:", parcelasError)
-        throw parcelasError
-      }
-
-      console.log("Parcelas inseridas com sucesso")
-    }
-
-    console.log(`Pedido #${pedidoId} criado completamente com sucesso`)
-
-    // Retornar o pedido básico em vez de buscar novamente
-    return {
-      id: pedidoId,
-      ...pedido,
-      itens: itens.map((item) => ({ ...item, pedido_id: pedidoId })),
-      parcelas: parcelas.map((parcela) => ({ ...parcela, pedido_id: pedidoId })),
-    }
-  } catch (error) {
-    console.error("Erro ao adicionar pedido:", error)
-    throw error
-  }
-}
-
-// Modificar a função updatePedidoStatus para usar fornecedor em vez de fornecedor_id
-// Agora, vamos modificar a função updatePedidoStatus para garantir que os tamanhos específicos sejam respeitados
-// Substitua a função updatePedidoStatus pela versão abaixo:
-
-export async function updatePedidoStatus(id: number, status: string, notaFiscal?: string) {
-  try {
-    const updateData: any = { status }
-
-    if (notaFiscal) {
-      updateData.nota_fiscal = notaFiscal
-    }
-
-    const { data, error } = await supabase.from("pedidos").update(updateData).eq("id", id).select()
-
-    if (error) {
-      console.error("Erro ao atualizar status do pedido:", error)
-      throw error
-    }
-
-    // Se o status for "Recebido", adicionar os produtos ao estoque e gerar contas a pagar
-    if (status === "Recebido") {
-      const pedidoCompleto = await getPedidoById(id)
-
-      if (!pedidoCompleto) {
-        throw new Error("Pedido não encontrado")
-      }
-
-      // Buscar o fornecedor
-      const { data: fornecedor } = await supabase
-        .from("fornecedores")
-        .select("*")
-        .eq("id", pedidoCompleto.fornecedor_id)
-        .single()
-
-      if (!fornecedor) {
-        throw new Error("Fornecedor não encontrado")
-      }
-
-      // Adicionar os produtos ao estoque
-      for (const item of pedidoCompleto.itens) {
-        // Verificar se o produto já existe
-        const { data: produtosExistentes } = await supabase.from("produtos").select("*").eq("nome", item.nome).limit(1)
-
-        // Buscar o nome da categoria a partir do ID
-        const { data: categoriaData } = await supabase
-          .from("categorias")
-          .select("nome")
-          .eq("id", Number.parseInt(item.categoria))
-          .single()
-
-        const categoriaNome = categoriaData ? categoriaData.nome : item.categoria
-
-        // Buscar os tamanhos específicos do item
-        const { data: tamanhosPedido } = await supabase
-          .from("tamanhos_item_pedido")
-          .select("*")
-          .eq("pedido_id", id)
-          .eq("item_pedido_id", item.id)
-
-        console.log(`Item ${item.nome}: Tamanhos encontrados:`, tamanhosPedido)
-
-        if (produtosExistentes && produtosExistentes.length > 0) {
-          // Atualizar o produto existente
-          const produto = produtosExistentes[0]
-
-          if (item.tipo_estoque === "par") {
-            // Para produtos do tipo "par", atualizar o produto
-            await supabase
-              .from("produtos")
-              .update({
-                preco: item.preco_unitario,
-                categoria: categoriaNome,
-                tipo_estoque: "par",
-              })
-              .eq("id", produto.id)
-
-            // Dentro da função updatePedidoStatus, substitua o bloco que lida com os tamanhos específicos do item:
-
-            // Verificar se o item tem tamanhos específicos
-            if (tamanhosPedido && tamanhosPedido.length > 0) {
-              console.log(`Produto ${item.nome} tem ${tamanhosPedido.length} tamanhos específicos:`, tamanhosPedido)
-
-              // Atualizar os tamanhos específicos
-              for (const tamanhoItem of tamanhosPedido) {
-                // Verificar se já existe registro para este tamanho
-                const { data: estoqueTamanho } = await supabase
-                  .from("estoque_tamanhos")
-                  .select("*")
-                  .eq("produto_id", produto.id)
-                  .eq("tamanho", tamanhoItem.tamanho)
-                  .single()
-
-                if (estoqueTamanho) {
-                  // Atualizar o estoque do tamanho existente
-                  const novaQuantidade = estoqueTamanho.quantidade + tamanhoItem.quantidade
-                  console.log(
-                    `Atualizando tamanho ${tamanhoItem.tamanho}: ${estoqueTamanho.quantidade} + ${tamanhoItem.quantidade} = ${novaQuantidade}`,
-                  )
-
-                  await supabase
-                    .from("estoque_tamanhos")
-                    .update({ quantidade: novaQuantidade })
-                    .eq("id", estoqueTamanho.id)
-                } else {
-                  // Criar novo registro para este tamanho
-                  console.log(
-                    `Criando novo registro para tamanho ${tamanhoItem.tamanho} com quantidade ${tamanhoItem.quantidade}`,
-                  )
-
-                  await supabase.from("estoque_tamanhos").insert({
-                    produto_id: produto.id,
-                    tamanho: tamanhoItem.tamanho,
-                    quantidade: tamanhoItem.quantidade,
-                  })
-                }
-              }
-            }
-          } else {
-            // Para produtos do tipo "unidade"
-            await supabase
-              .from("produtos")
-              .update({
-                estoque: produto.estoque + item.quantidade,
-                preco: item.preco_unitario,
-                categoria: categoriaNome,
-              })
-              .eq("id", produto.id)
-          }
-        } else {
-          // Adicionar novo produto
-          const { data: novoProduto } = await supabase
-            .from("produtos")
-            .insert([
-              {
-                nome: item.nome,
-                categoria: categoriaNome,
-                preco: item.preco_unitario,
-                estoque: item.quantidade,
-                tipo_estoque: item.tipo_estoque,
-              },
-            ])
-            .select()
-
-          // Se for produto do tipo "par", criar registros de estoque por tamanho
-          if (item.tipo_estoque === "par" && novoProduto && novoProduto.length > 0) {
-            if (tamanhosPedido && tamanhosPedido.length > 0) {
-              // Se tiver tamanhos específicos, usar esses tamanhos
-              console.log(
-                `Novo produto ${item.nome} com ${tamanhosPedido.length} tamanhos específicos:`,
-                tamanhosPedido,
-              )
-
-              const estoquesParaInserir = tamanhosPedido.map((t) => ({
-                produto_id: novoProduto[0].id,
-                tamanho: t.tamanho,
-                quantidade: t.quantidade,
-              }))
-
-              console.log(`Inserindo registros de estoque para novo produto:`, estoquesParaInserir)
-
-              const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
-
-              if (error) {
-                console.error("Erro ao inserir estoque por tamanho para novo produto:", error)
-                throw error
-              }
-
-              console.log("Registros de estoque para novo produto inseridos com sucesso:", data)
-            } else {
-              // Se não tiver tamanhos específicos, distribuir uniformemente
-              console.log(`Novo produto ${item.nome} sem tamanhos específicos, distribuindo uniformemente`)
-
-              // Distribuir a quantidade uniformemente entre os tamanhos 34 a 43
-              const tamanhosPadrao = [34, 35, 36, 37, 38, 39, 40, 41, 42, 43]
-              const quantidadePorTamanho = Math.floor(item.quantidade / tamanhosPadrao.length)
-              const resto = item.quantidade % tamanhosPadrao.length
-
-              console.log(
-                `Novo produto: Distribuindo ${item.quantidade} unidades entre ${tamanhosPadrao.length} tamanhos. Cada tamanho receberá ${quantidadePorTamanho} unidades, com ${resto} de resto para o tamanho 38.`,
-              )
-
-              const estoquesParaInserir = tamanhosPadrao.map((tamanho) => ({
-                produto_id: novoProduto[0].id,
-                tamanho,
-                quantidade: tamanho === 38 ? quantidadePorTamanho + resto : quantidadePorTamanho, // Adicionar o resto ao tamanho 38
-              }))
-
-              console.log(`Inserindo registros de estoque para novo produto:`, estoquesParaInserir)
-
-              const { data, error } = await supabase.from("estoque_tamanhos").insert(estoquesParaInserir)
-
-              if (error) {
-                console.error("Erro ao inserir estoque por tamanho para novo produto:", error)
-                throw error
-              }
-
-              console.log("Registros de estoque para novo produto inseridos com sucesso:", data)
-            }
-          }
-        }
-      }
-
-      // Gerar contas a pagar para cada parcela
-      if (pedidoCompleto.parcelas && pedidoCompleto.parcelas.length > 0) {
-        console.log("Gerando contas a pagar para", pedidoCompleto.parcelas.length, "parcelas")
-
-        for (const parcela of pedidoCompleto.parcelas) {
-          // Criar a conta a pagar
-          const contaPagar = {
-            descricao: `NF ${notaFiscal || "Sem NF"} - Pedido #${id}`,
-            valor: parcela.valor,
-            data_vencimento: parcela.data_vencimento,
-            status: "Pendente",
-            fornecedor: fornecedor.razao_social, // Usar razao_social em vez de id
-            observacao: `Parcela ${parcela.numero_parcela}/${pedidoCompleto.parcelas.length} do Pedido #${id}`,
-          }
-
-          console.log("Criando conta a pagar:", contaPagar)
-
-          const { data, error } = await supabase.from("contas_pagar").insert([contaPagar]).select()
-
-          if (error) {
-            console.error("Erro ao criar conta a pagar:", error)
-            throw error
-          }
-
-          console.log("Conta a pagar criada:", data)
-        }
-      }
-    }
-
-    return data?.[0]
-  } catch (error) {
-    console.error("Erro ao atualizar status do pedido:", error)
-    throw error
-  }
-}
-
-export async function deletePedido(id: number) {
-  try {
-    // Verificar se o pedido já foi recebido
-    const { data: pedido } = await supabase.from("pedidos").select("status").eq("id", id).single()
-
-    if (pedido && pedido.status === "Recebido") {
-      throw new Error("Não é possível excluir um pedido já recebido")
-    }
-
-    // Excluir o pedido (as parcelas e itens serão excluídos automaticamente devido à constraint ON DELETE CASCADE)
-    const { error } = await supabase.from("pedidos").delete().eq("id", id)
-
-    if (error) {
-      console.error("Erro ao excluir pedido:", error)
-      throw error
-    }
-
-    return true
-  } catch (error) {
-    console.error("Erro ao excluir pedido:", error)
-    throw error
-  }
-}
