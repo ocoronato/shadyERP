@@ -6,7 +6,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <ProtectedRoute>
       <Navbar />
-      <main>{children}</main>
+      <main className="container mx-auto px-4 py-4">{children}</main>
     </ProtectedRoute>
   )
 }
