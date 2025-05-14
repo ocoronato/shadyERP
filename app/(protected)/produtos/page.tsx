@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,43 +14,43 @@ export default function ProdutosPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [produtos, setProdutos] = useState<Produto[]>([])
-  const [filteredProdutos, setFilteredProdutos] = useState<Produto[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const carregarProdutos = async () => {
-      try {
-        setIsLoading(true)
-        const data = await getProdutos()
-        setProdutos(data)
-        setFilteredProdutos(data)
-      } catch (error) {
-        console.error("Erro ao carregar produtos:", error)
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os produtos.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
+  // Usar useCallback para evitar recriações desnecessárias da função
+  const carregarProdutos = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const data = await getProdutos()
+      setProdutos(data)
+    } catch (error) {
+      console.error("Erro ao carregar produtos:", error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os produtos.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
-
-    carregarProdutos()
   }, [toast])
 
   useEffect(() => {
+    carregarProdutos()
+  }, [carregarProdutos])
+
+  // Usar useMemo para calcular produtos filtrados apenas quando necessário
+  const filteredProdutos = useMemo(() => {
     if (searchTerm.trim() === "") {
-      setFilteredProdutos(produtos)
-    } else {
-      const filtered = produtos.filter(
-        (produto) =>
-          produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          produto.categoria.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-      setFilteredProdutos(filtered)
+      return produtos
     }
+
+    const searchTermLower = searchTerm.toLowerCase()
+    return produtos.filter(
+      (produto) =>
+        produto.nome.toLowerCase().includes(searchTermLower) ||
+        produto.categoria.toLowerCase().includes(searchTermLower),
+    )
   }, [searchTerm, produtos])
 
   const handleDelete = async (id: number) => {
@@ -58,7 +58,6 @@ export default function ProdutosPage() {
       try {
         await deleteProduto(id)
         setProdutos(produtos.filter((produto) => produto.id !== id))
-        setFilteredProdutos(filteredProdutos.filter((produto) => produto.id !== id))
         toast({
           title: "Produto excluído",
           description: "O produto foi excluído com sucesso.",
@@ -74,9 +73,9 @@ export default function ProdutosPage() {
     }
   }
 
-  const formatarPreco = (preco: number) => {
+  const formatarPreco = useCallback((preco: number) => {
     return `R$ ${preco.toFixed(2).replace(".", ",")}`
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

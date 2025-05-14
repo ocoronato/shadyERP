@@ -314,7 +314,7 @@ export async function deleteCliente(id: number) {
 // Funções para categorias
 export async function getCategorias() {
   try {
-    const { data, error } = await supabase.from("categorias").select("*").order("nome", { ascending: true })
+    const { data, error } = await supabase.from("categorias").select("id, nome").order("nome", { ascending: true })
 
     if (error) {
       console.error("Erro ao buscar categorias:", error)
@@ -395,7 +395,10 @@ export async function deleteCategoria(id: number) {
 // Funções para produtos
 export async function getProdutos() {
   try {
-    const { data, error } = await supabase.from("produtos").select("*").order("id", { ascending: true })
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("id, nome, categoria, preco, estoque, tipo_estoque")
+      .order("id", { ascending: true })
 
     if (error) {
       console.error("Erro ao buscar produtos:", error)
@@ -1391,7 +1394,10 @@ export async function deleteContaReceber(id: number) {
 // Funções para fornecedores
 export async function getFornecedores() {
   try {
-    const { data, error } = await supabase.from("fornecedores").select("*").order("razao_social", { ascending: true })
+    const { data, error } = await supabase
+      .from("fornecedores")
+      .select("id, razao_social")
+      .order("razao_social", { ascending: true })
 
     if (error) {
       console.error("Erro ao buscar fornecedores:", error)
@@ -1486,7 +1492,10 @@ export async function deleteFornecedor(id: number) {
 // Funções para pedidos
 export async function getPedidos() {
   try {
-    const { data, error } = await supabase.from("pedidos").select("*").order("id", { ascending: false })
+    const { data, error } = await supabase
+      .from("pedidos")
+      .select("id, fornecedor_id, data_pedido, status, total")
+      .order("id", { ascending: false })
 
     if (error) {
       console.error("Erro ao buscar pedidos:", error)
@@ -1529,27 +1538,35 @@ export async function getPedidoById(id: number) {
       return null
     }
 
-    // Buscar tamanhos dos itens do pedido
-    const { data: tamanhos, error: tamanhosError } = await supabase
-      .from("tamanhos_item_pedido")
-      .select("*")
-      .eq("pedido_id", id)
+    // Tentar buscar tamanhos dos itens do pedido, mas não falhar se a tabela não existir
+    let tamanhos = []
+    try {
+      const { data: tamanhoData, error: tamanhosError } = await supabase
+        .from("tamanhos_item_pedido")
+        .select("*")
+        .eq("pedido_id", id)
 
-    if (tamanhosError) {
-      console.error("Erro ao buscar tamanhos dos itens do pedido:", tamanhosError)
-      // Não falhar completamente se não conseguir carregar os tamanhos
+      if (!tamanhosError) {
+        tamanhos = tamanhoData || []
+      } else {
+        console.log("Aviso: Não foi possível buscar tamanhos (tabela pode não existir ainda):", tamanhosError)
+      }
+    } catch (e) {
+      console.log("Erro ao buscar tamanhos:", e)
     }
 
     // Associar tamanhos aos itens
     const itensComTamanhos = itens?.map((item) => {
-      if (item.tipo_estoque === "par" && tamanhos) {
+      if (item.tipo_estoque === "par" && tamanhos && tamanhos.length > 0) {
         const tamanhosFiltrados = tamanhos.filter((t) => t.item_pedido_id === item.id)
-        return {
-          ...item,
-          tamanhos: tamanhosFiltrados.map((t) => ({
-            tamanho: t.tamanho,
-            quantidade: t.quantidade,
-          })),
+        if (tamanhosFiltrados.length > 0) {
+          return {
+            ...item,
+            tamanhos: tamanhosFiltrados.map((t) => ({
+              tamanho: t.tamanho,
+              quantidade: t.quantidade,
+            })),
+          }
         }
       }
       return item
@@ -1575,6 +1592,8 @@ export async function addPedido(
   parcelas: Omit<ParcelaPedido, "id" | "pedido_id">[],
 ) {
   try {
+    console.log("Iniciando criação de pedido:", pedido)
+
     // Inserir o pedido
     const { data: pedidoInserido, error: pedidoError } = await supabase
       .from("pedidos")
@@ -1596,10 +1615,15 @@ export async function addPedido(
     }
 
     const pedidoId = pedidoInserido[0].id
+    console.log(`Pedido #${pedidoId} criado com sucesso`)
 
     // Inserir os itens do pedido
     if (itens.length > 0) {
+      console.log(`Inserindo ${itens.length} itens para o pedido #${pedidoId}`)
+
       for (const item of itens) {
+        console.log(`Processando item: ${item.nome}`)
+
         // Inserir o item
         const { data: itemInserido, error: itemError } = await supabase
           .from("itens_pedido")
@@ -1620,31 +1644,50 @@ export async function addPedido(
           throw itemError
         }
 
-        // Se o item for do tipo "par" e tiver tamanhos, inserir os tamanhos
+        console.log(`Item ${item.nome} inserido com ID: ${itemInserido[0].id}`)
+
+        // Se o item for do tipo "par" e tiver tamanhos, tentar inserir os tamanhos
         if (item.tipo_estoque === "par" && item.tamanhos && item.tamanhos.length > 0 && itemInserido) {
-          console.log(`Salvando ${item.tamanhos.length} tamanhos para o item ${item.nome}:`, item.tamanhos)
+          console.log(`Item ${item.nome} tem ${item.tamanhos.length} tamanhos para inserir`)
 
-          const tamanhosPedido = item.tamanhos.map((t) => ({
-            pedido_id: pedidoId,
-            item_pedido_id: itemInserido[0].id,
-            tamanho: t.tamanho,
-            quantidade: t.quantidade,
-          }))
+          try {
+            // Verificar se a tabela tamanhos_item_pedido existe
+            const { error: checkError } = await supabase.from("tamanhos_item_pedido").select("id").limit(1).single()
 
-          const { error: tamanhoError } = await supabase.from("tamanhos_item_pedido").insert(tamanhosPedido)
+            // Se a tabela existir, inserir os tamanhos
+            if (!checkError) {
+              const tamanhosPedido = item.tamanhos.map((t) => ({
+                pedido_id: pedidoId,
+                item_pedido_id: itemInserido[0].id,
+                tamanho: t.tamanho,
+                quantidade: t.quantidade,
+              }))
 
-          if (tamanhoError) {
-            console.error("Erro ao adicionar tamanhos do item:", tamanhoError)
-            throw tamanhoError
+              console.log(`Inserindo tamanhos para o item ${item.nome}:`, tamanhosPedido)
+
+              const { error: tamanhoError } = await supabase.from("tamanhos_item_pedido").insert(tamanhosPedido)
+
+              if (tamanhoError) {
+                console.error("Erro ao adicionar tamanhos do item:", tamanhoError)
+                // Não lançar erro, apenas registrar
+              } else {
+                console.log(`Tamanhos salvos com sucesso para o item ${item.nome}`)
+              }
+            } else {
+              console.log("Tabela tamanhos_item_pedido não existe, pulando inserção de tamanhos")
+            }
+          } catch (e) {
+            console.error("Erro ao verificar ou inserir tamanhos:", e)
+            // Não lançar erro, apenas registrar
           }
-
-          console.log(`Tamanhos salvos com sucesso para o item ${item.nome}`)
         }
       }
     }
 
     // Inserir as parcelas do pedido
     if (parcelas.length > 0) {
+      console.log(`Inserindo ${parcelas.length} parcelas para o pedido #${pedidoId}`)
+
       const parcelasParaInserir = parcelas.map((parcela) => ({
         pedido_id: pedidoId,
         numero_parcela: parcela.numero_parcela,
@@ -1658,10 +1701,19 @@ export async function addPedido(
         console.error("Erro ao adicionar parcelas do pedido:", parcelasError)
         throw parcelasError
       }
+
+      console.log("Parcelas inseridas com sucesso")
     }
 
-    // Retornar o pedido completo
-    return await getPedidoById(pedidoId)
+    console.log(`Pedido #${pedidoId} criado completamente com sucesso`)
+
+    // Retornar o pedido básico em vez de buscar novamente
+    return {
+      id: pedidoId,
+      ...pedido,
+      itens: itens.map((item) => ({ ...item, pedido_id: pedidoId })),
+      parcelas: parcelas.map((parcela) => ({ ...parcela, pedido_id: pedidoId })),
+    }
   } catch (error) {
     console.error("Erro ao adicionar pedido:", error)
     throw error

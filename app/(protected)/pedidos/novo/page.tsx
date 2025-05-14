@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -32,6 +32,104 @@ import {
 } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 
+// Componente para renderizar um item de tamanho
+const TamanhoItem = ({ tamanho, selecionado, quantidade, onSelecaoChange, onQuantidadeChange }) => {
+  return (
+    <div className="border rounded-md p-2">
+      <div className="flex items-center mb-1">
+        <Checkbox
+          id={`tamanho-${tamanho}`}
+          checked={selecionado}
+          onCheckedChange={(checked) => onSelecaoChange(tamanho, checked === true)}
+        />
+        <Label htmlFor={`tamanho-${tamanho}`} className="ml-2 cursor-pointer text-sm font-medium">
+          Tamanho {tamanho}
+        </Label>
+      </div>
+      {selecionado && (
+        <Input
+          type="number"
+          min="1"
+          value={quantidade || ""}
+          onChange={(e) => onQuantidadeChange(tamanho, Number.parseInt(e.target.value) || 0)}
+          className="mt-1 h-8 text-sm"
+          placeholder="Qtd"
+        />
+      )}
+    </div>
+  )
+}
+
+// Componente para renderizar um item de pedido na tabela
+const ItemPedido = ({ item, index, categorias, onRemove, formatarPreco }) => {
+  const categoria = categorias.find((c) => c.id.toString() === item.categoria)
+
+  return (
+    <tr>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.nome}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {categoria?.nome || "Categoria não encontrada"}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <Badge variant="outline" className="flex items-center gap-1">
+          {item.tipo_estoque === "unidade" ? (
+            <LucidePackage className="h-3 w-3" />
+          ) : (
+            <LucideCalendar className="h-3 w-3" />
+          )}
+          {item.tipo_estoque === "unidade" ? "Unidade" : "Par"}
+        </Badge>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {item.tipo_estoque === "par" && item.tamanhos ? (
+          <div className="flex flex-col">
+            <span>{item.quantidade} total</span>
+            <span className="text-xs text-gray-400">{item.tamanhos.length} tamanhos</span>
+          </div>
+        ) : (
+          item.quantidade
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatarPreco(item.preco_unitario)}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {formatarPreco(item.quantidade * item.preco_unitario)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <Button variant="ghost" size="sm" onClick={() => onRemove(index)} className="text-red-600 hover:text-red-800">
+          <LucideTrash className="h-4 w-4" />
+        </Button>
+      </td>
+    </tr>
+  )
+}
+
+// Componente para renderizar uma parcela na tabela
+const ParcelaItem = ({ parcela, index, totalParcelas, onDataChange, onValorChange, formatarPreco }) => {
+  return (
+    <tr>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        {parcela.numero_parcela}/{totalParcelas}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <Input
+          type="date"
+          value={parcela.data_vencimento}
+          onChange={(e) => onDataChange(index, e.target.value)}
+          className="w-40"
+        />
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <Input
+          type="text"
+          value={parcela.valor.toFixed(2).replace(".", ",")}
+          onChange={(e) => onValorChange(index, e.target.value)}
+          className="w-32"
+        />
+      </td>
+    </tr>
+  )
+}
+
 export default function NovoPedidoPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -40,7 +138,6 @@ export default function NovoPedidoPage() {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [produtos, setProdutos] = useState<Produto[]>([])
-  const [produtosFiltrados, setProdutosFiltrados] = useState<Produto[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -81,73 +178,78 @@ export default function NovoPedidoPage() {
 
   // Inicializar os tamanhos (1 a 50)
   useEffect(() => {
-    const tamanhos = Array.from({ length: 50 }, (_, i) => ({
-      tamanho: i + 1,
-      quantidade: 0,
-      selecionado: false,
-    }))
-    setItemTamanhos(tamanhos)
-  }, [])
-
-  useEffect(() => {
-    const carregarDados = async () => {
-      setIsLoading(true)
-      try {
-        const [fornecedoresData, categoriasData, produtosData] = await Promise.all([
-          getFornecedores(),
-          getCategorias(),
-          getProdutos(),
-        ])
-        setFornecedores(fornecedoresData)
-        setCategorias(categoriasData)
-        setProdutos(produtosData)
-        setProdutosFiltrados(produtosData)
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error)
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível carregar os dados necessários.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
+    if (itemTamanhos.length === 0) {
+      const tamanhos = Array.from({ length: 50 }, (_, i) => ({
+        tamanho: i + 1,
+        quantidade: 0,
+        selecionado: false,
+      }))
+      setItemTamanhos(tamanhos)
     }
+  }, [itemTamanhos.length])
 
-    carregarDados()
+  // Carregar dados iniciais
+  const carregarDados = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const [fornecedoresData, categoriasData, produtosData] = await Promise.all([
+        getFornecedores(),
+        getCategorias(),
+        getProdutos(),
+      ])
+      setFornecedores(fornecedoresData)
+      setCategorias(categoriasData)
+      setProdutos(produtosData)
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error)
+      toast({
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os dados necessários.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }, [toast])
 
-  // Filtrar produtos com base no termo de busca
   useEffect(() => {
+    carregarDados()
+  }, [carregarDados])
+
+  // Filtrar produtos com base no termo de busca
+  const produtosFiltrados = useMemo(() => {
     if (searchTerm.trim() === "") {
-      setProdutosFiltrados(produtos)
-    } else {
-      const filtered = produtos.filter(
-        (produto) =>
-          produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          produto.categoria.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-      setProdutosFiltrados(filtered)
+      return produtos
     }
+
+    const searchTermLower = searchTerm.toLowerCase()
+    return produtos.filter(
+      (produto) =>
+        produto.nome.toLowerCase().includes(searchTermLower) ||
+        produto.categoria.toLowerCase().includes(searchTermLower),
+    )
   }, [searchTerm, produtos])
 
   // Selecionar um produto existente
-  const selecionarProduto = (produto: Produto) => {
-    setItemNome(produto.nome)
-    setItemTipoEstoque(produto.tipo_estoque as "unidade" | "par")
-    setItemPreco(produto.preco.toString().replace(".", ","))
+  const selecionarProduto = useCallback(
+    (produto: Produto) => {
+      setItemNome(produto.nome)
+      setItemTipoEstoque(produto.tipo_estoque as "unidade" | "par")
+      setItemPreco(produto.preco.toString().replace(".", ","))
 
-    // Encontrar o ID da categoria
-    const categoria = categorias.find((c) => c.nome === produto.categoria)
-    if (categoria) {
-      setItemCategoria(categoria.id.toString())
-    }
+      // Encontrar o ID da categoria
+      const categoria = categorias.find((c) => c.nome === produto.categoria)
+      if (categoria) {
+        setItemCategoria(categoria.id.toString())
+      }
 
-    setDialogOpen(false)
-  }
+      setDialogOpen(false)
+    },
+    [categorias],
+  )
 
   // Calcular o total do pedido
-  const calcularTotal = () => {
+  const calcularTotal = useCallback(() => {
     return itens.reduce((total, item) => {
       if (item.tipo_estoque === "unidade") {
         return total + item.quantidade * item.preco_unitario
@@ -159,10 +261,10 @@ export default function NovoPedidoPage() {
         return total + quantidadeTotal * item.preco_unitario
       }
     }, 0)
-  }
+  }, [itens])
 
   // Adicionar um item à lista
-  const adicionarItem = () => {
+  const adicionarItem = useCallback(() => {
     if (!itemNome.trim()) {
       toast({
         title: "Nome do produto obrigatório",
@@ -254,39 +356,48 @@ export default function NovoPedidoPage() {
         selecionado: false,
       })),
     )
-  }
+  }, [itemNome, itemCategoria, itemPreco, itemTipoEstoque, itemTamanhos, itemQuantidade, itens, toast])
 
   // Remover um item da lista
-  const removerItem = (index: number) => {
-    setItens(itens.filter((_, i) => i !== index))
-  }
+  const removerItem = useCallback(
+    (index: number) => {
+      setItens(itens.filter((_, i) => i !== index))
+    },
+    [itens],
+  )
 
   // Atualizar a seleção de tamanho
-  const atualizarSelecaoTamanho = (tamanho: number, selecionado: boolean) => {
-    setItemTamanhos(
-      itemTamanhos.map((t) => {
-        if (t.tamanho === tamanho) {
-          return { ...t, selecionado, quantidade: selecionado ? t.quantidade || 1 : 0 }
-        }
-        return t
-      }),
-    )
-  }
+  const atualizarSelecaoTamanho = useCallback(
+    (tamanho: number, selecionado: boolean) => {
+      setItemTamanhos(
+        itemTamanhos.map((t) => {
+          if (t.tamanho === tamanho) {
+            return { ...t, selecionado, quantidade: selecionado ? t.quantidade || 1 : 0 }
+          }
+          return t
+        }),
+      )
+    },
+    [itemTamanhos],
+  )
 
   // Atualizar a quantidade de um tamanho
-  const atualizarQuantidadeTamanho = (tamanho: number, quantidade: number) => {
-    setItemTamanhos(
-      itemTamanhos.map((t) => {
-        if (t.tamanho === tamanho) {
-          return { ...t, quantidade }
-        }
-        return t
-      }),
-    )
-  }
+  const atualizarQuantidadeTamanho = useCallback(
+    (tamanho: number, quantidade: number) => {
+      setItemTamanhos(
+        itemTamanhos.map((t) => {
+          if (t.tamanho === tamanho) {
+            return { ...t, quantidade }
+          }
+          return t
+        }),
+      )
+    },
+    [itemTamanhos],
+  )
 
   // Calcular e gerar as parcelas
-  const gerarParcelas = () => {
+  const gerarParcelas = useCallback(() => {
     const total = calcularTotal()
     const numParcelas = Number.parseInt(totalParcelas)
 
@@ -315,7 +426,7 @@ export default function NovoPedidoPage() {
     }
 
     setParcelas(novasParcelas)
-  }
+  }, [calcularTotal, totalParcelas, dataPedido, toast])
 
   // Atualizar parcelas quando os itens ou o número de parcelas mudar
   useEffect(() => {
@@ -324,39 +435,45 @@ export default function NovoPedidoPage() {
     } else {
       setParcelas([])
     }
-  }, [itens, totalParcelas, dataPedido])
+  }, [itens, totalParcelas, dataPedido, gerarParcelas])
 
   // Atualizar data de vencimento de uma parcela
-  const atualizarDataVencimento = (index: number, novaData: string) => {
-    setParcelas(
-      parcelas.map((parcela, i) => {
-        if (i === index) {
-          return { ...parcela, data_vencimento: novaData }
-        }
-        return parcela
-      }),
-    )
-  }
+  const atualizarDataVencimento = useCallback(
+    (index: number, novaData: string) => {
+      setParcelas(
+        parcelas.map((parcela, i) => {
+          if (i === index) {
+            return { ...parcela, data_vencimento: novaData }
+          }
+          return parcela
+        }),
+      )
+    },
+    [parcelas],
+  )
 
   // Atualizar valor de uma parcela
-  const atualizarValorParcela = (index: number, novoValor: string) => {
-    const valor = Number.parseFloat(novoValor.replace(",", "."))
-    if (isNaN(valor)) return
+  const atualizarValorParcela = useCallback(
+    (index: number, novoValor: string) => {
+      const valor = Number.parseFloat(novoValor.replace(",", "."))
+      if (isNaN(valor)) return
 
-    setParcelas(
-      parcelas.map((parcela, i) => {
-        if (i === index) {
-          return { ...parcela, valor }
-        }
-        return parcela
-      }),
-    )
-  }
+      setParcelas(
+        parcelas.map((parcela, i) => {
+          if (i === index) {
+            return { ...parcela, valor }
+          }
+          return parcela
+        }),
+      )
+    },
+    [parcelas],
+  )
 
   // Formatar preço para exibição
-  const formatarPreco = (preco: number) => {
+  const formatarPreco = useCallback((preco: number) => {
     return `R$ ${preco.toFixed(2).replace(".", ",")}`
-  }
+  }, [])
 
   // Enviar o formulário
   const enviarFormulario = async () => {
@@ -406,26 +523,23 @@ export default function NovoPedidoPage() {
     try {
       // Preparar os itens para envio (converter formato de tamanhos)
       const itensParaEnviar = itens.map((item) => {
-        if (item.tipo_estoque === "unidade" || !item.tamanhos) {
-          return {
-            nome: item.nome,
-            tipo_estoque: item.tipo_estoque,
-            quantidade: item.quantidade,
-            preco_unitario: item.preco_unitario,
-            categoria: item.categoria,
-          }
-        }
-
-        // Para itens do tipo "par", calcular a quantidade total
-        const quantidadeTotal = item.tamanhos.reduce((sum, t) => sum + t.quantidade, 0)
-
-        return {
+        const itemParaEnviar = {
           nome: item.nome,
           tipo_estoque: item.tipo_estoque,
-          quantidade: quantidadeTotal,
+          quantidade: item.quantidade,
           preco_unitario: item.preco_unitario,
           categoria: item.categoria,
         }
+
+        // Se o item for do tipo "par" e tiver tamanhos, incluí-los
+        if (item.tipo_estoque === "par" && item.tamanhos && item.tamanhos.length > 0) {
+          return {
+            ...itemParaEnviar,
+            tamanhos: item.tamanhos,
+          }
+        }
+
+        return itemParaEnviar
       })
 
       const pedido = {
@@ -457,6 +571,15 @@ export default function NovoPedidoPage() {
       setIsSubmitting(false)
     }
   }
+
+  // Renderizar apenas os tamanhos relevantes para melhorar a performance
+  const tamanhosFiltrados = useMemo(() => {
+    // Para calçados, mostrar apenas tamanhos de 34 a 46
+    if (itemTipoEstoque === "par") {
+      return itemTamanhos.filter((t) => t.tamanho >= 34 && t.tamanho <= 46)
+    }
+    return []
+  }, [itemTamanhos, itemTipoEstoque])
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -595,36 +718,15 @@ export default function NovoPedidoPage() {
                         <div className="md:col-span-2">
                           <Label>Tamanhos e Quantidades</Label>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
-                            {itemTamanhos.map((tamanho) => (
-                              <div key={tamanho.tamanho} className="border rounded-md p-2">
-                                <div className="flex items-center mb-1">
-                                  <Checkbox
-                                    id={`tamanho-${tamanho.tamanho}`}
-                                    checked={tamanho.selecionado}
-                                    onCheckedChange={(checked) =>
-                                      atualizarSelecaoTamanho(tamanho.tamanho, checked === true)
-                                    }
-                                  />
-                                  <Label
-                                    htmlFor={`tamanho-${tamanho.tamanho}`}
-                                    className="ml-2 cursor-pointer text-sm font-medium"
-                                  >
-                                    Tamanho {tamanho.tamanho}
-                                  </Label>
-                                </div>
-                                {tamanho.selecionado && (
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    value={tamanho.quantidade || ""}
-                                    onChange={(e) =>
-                                      atualizarQuantidadeTamanho(tamanho.tamanho, Number.parseInt(e.target.value) || 0)
-                                    }
-                                    className="mt-1 h-8 text-sm"
-                                    placeholder="Qtd"
-                                  />
-                                )}
-                              </div>
+                            {tamanhosFiltrados.map((tamanho) => (
+                              <TamanhoItem
+                                key={tamanho.tamanho}
+                                tamanho={tamanho.tamanho}
+                                selecionado={tamanho.selecionado}
+                                quantidade={tamanho.quantidade}
+                                onSelecaoChange={atualizarSelecaoTamanho}
+                                onQuantidadeChange={atualizarQuantidadeTamanho}
+                              />
                             ))}
                           </div>
                         </div>
@@ -746,36 +848,15 @@ export default function NovoPedidoPage() {
                         <div>
                           <Label>Tamanhos e Quantidades</Label>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
-                            {itemTamanhos.map((tamanho) => (
-                              <div key={tamanho.tamanho} className="border rounded-md p-2">
-                                <div className="flex items-center mb-1">
-                                  <Checkbox
-                                    id={`tamanho-existente-${tamanho.tamanho}`}
-                                    checked={tamanho.selecionado}
-                                    onCheckedChange={(checked) =>
-                                      atualizarSelecaoTamanho(tamanho.tamanho, checked === true)
-                                    }
-                                  />
-                                  <Label
-                                    htmlFor={`tamanho-existente-${tamanho.tamanho}`}
-                                    className="ml-2 cursor-pointer text-sm font-medium"
-                                  >
-                                    Tamanho {tamanho.tamanho}
-                                  </Label>
-                                </div>
-                                {tamanho.selecionado && (
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    value={tamanho.quantidade || ""}
-                                    onChange={(e) =>
-                                      atualizarQuantidadeTamanho(tamanho.tamanho, Number.parseInt(e.target.value) || 0)
-                                    }
-                                    className="mt-1 h-8 text-sm"
-                                    placeholder="Qtd"
-                                  />
-                                )}
-                              </div>
+                            {tamanhosFiltrados.map((tamanho) => (
+                              <TamanhoItem
+                                key={tamanho.tamanho}
+                                tamanho={tamanho.tamanho}
+                                selecionado={tamanho.selecionado}
+                                quantidade={tamanho.quantidade}
+                                onSelecaoChange={atualizarSelecaoTamanho}
+                                onQuantidadeChange={atualizarQuantidadeTamanho}
+                              />
                             ))}
                           </div>
                         </div>
@@ -821,55 +902,16 @@ export default function NovoPedidoPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {itens.map((item, index) => {
-                            const categoria = categorias.find((c) => c.id.toString() === item.categoria)
-                            return (
-                              <tr key={index}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {item.nome}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {categoria?.nome || "Categoria não encontrada"}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <Badge variant="outline" className="flex items-center gap-1">
-                                    {item.tipo_estoque === "unidade" ? (
-                                      <LucidePackage className="h-3 w-3" />
-                                    ) : (
-                                      <LucideCalendar className="h-3 w-3" />
-                                    )}
-                                    {item.tipo_estoque === "unidade" ? "Unidade" : "Par"}
-                                  </Badge>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {item.tipo_estoque === "par" && item.tamanhos ? (
-                                    <div className="flex flex-col">
-                                      <span>{item.quantidade} total</span>
-                                      <span className="text-xs text-gray-400">{item.tamanhos.length} tamanhos</span>
-                                    </div>
-                                  ) : (
-                                    item.quantidade
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {formatarPreco(item.preco_unitario)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {formatarPreco(item.quantidade * item.preco_unitario)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removerItem(index)}
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    <LucideTrash className="h-4 w-4" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            )
-                          })}
+                          {itens.map((item, index) => (
+                            <ItemPedido
+                              key={index}
+                              item={item}
+                              index={index}
+                              categorias={categorias}
+                              onRemove={removerItem}
+                              formatarPreco={formatarPreco}
+                            />
+                          ))}
                         </tbody>
                         <tfoot>
                           <tr>
@@ -923,27 +965,15 @@ export default function NovoPedidoPage() {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {parcelas.map((parcela, index) => (
-                          <tr key={index}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {parcela.numero_parcela}/{parcelas.length}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <Input
-                                type="date"
-                                value={parcela.data_vencimento}
-                                onChange={(e) => atualizarDataVencimento(index, e.target.value)}
-                                className="w-40"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <Input
-                                type="text"
-                                value={parcela.valor.toFixed(2).replace(".", ",")}
-                                onChange={(e) => atualizarValorParcela(index, e.target.value)}
-                                className="w-32"
-                              />
-                            </td>
-                          </tr>
+                          <ParcelaItem
+                            key={index}
+                            parcela={parcela}
+                            index={index}
+                            totalParcelas={parcelas.length}
+                            onDataChange={atualizarDataVencimento}
+                            onValorChange={atualizarValorParcela}
+                            formatarPreco={formatarPreco}
+                          />
                         ))}
                       </tbody>
                       <tfoot>
