@@ -152,6 +152,30 @@ export default function DetalhesPedido({ params }: { params: { id: string } }) {
     }
   }
 
+  // Função para renderizar a grade de tamanhos
+  const renderizarGradeTamanhos = (tamanhos) => {
+    if (!tamanhos || tamanhos.length === 0) return null
+
+    // Ordenar tamanhos
+    const tamanhosSorted = [...tamanhos].sort((a, b) => a.tamanho - b.tamanho)
+
+    return (
+      <div className="mt-2">
+        <p className="text-xs text-gray-500 mb-1">Grade de tamanhos:</p>
+        <div className="flex flex-wrap gap-2">
+          {tamanhosSorted.map((t) => (
+            <div key={t.tamanho} className="flex items-center justify-between bg-gray-100 rounded-md px-2 py-1">
+              <span className="text-xs font-medium mr-2">Tam {t.tamanho}:</span>
+              <span className="text-xs">
+                {t.quantidade} {t.quantidade > 1 ? "pares" : "par"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -318,7 +342,15 @@ export default function DetalhesPedido({ params }: { params: { id: string } }) {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {pedido.itens.map((item: any, index: number) => (
                     <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.nome}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div>
+                          {item.nome}
+                          {item.tipo_estoque === "par" &&
+                            item.tamanhos &&
+                            item.tamanhos.length > 0 &&
+                            renderizarGradeTamanhos(item.tamanhos)}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.categoria}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <Badge variant="outline" className="flex items-center gap-1">
