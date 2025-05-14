@@ -156,6 +156,10 @@ export type ParcelaPedido = {
 }
 
 // Função para verificar se as tabelas existem
+// Primeiro, vamos verificar se a tabela tamanhos_item_pedido existe no banco de dados
+// Adicione esta verificação na função checkTablesExist()
+
+// Localizar a função checkTablesExist() e adicionar a verificação da tabela tamanhos_item_pedido
 export async function checkTablesExist() {
   try {
     // Verificar se a tabela clientes existe
@@ -190,6 +194,10 @@ export async function checkTablesExist() {
     const { error: estoqueTamanhosError } = await supabase.from("estoque_tamanhos").select("id").limit(1)
     const estoqueTamanhosExists = !estoqueTamanhosError
 
+    // Verificar se a tabela tamanhos_item_pedido existe
+    const { error: tamanhosPedidoError } = await supabase.from("tamanhos_item_pedido").select("id").limit(1)
+    const tamanhosPedidoExists = !tamanhosPedidoError
+
     return {
       clientesExists,
       produtosExists,
@@ -199,6 +207,7 @@ export async function checkTablesExist() {
       usuariosExists,
       fornecedoresExists,
       estoqueTamanhosExists,
+      tamanhosPedidoExists,
       allExist:
         clientesExists &&
         produtosExists &&
@@ -207,7 +216,8 @@ export async function checkTablesExist() {
         categoriasExists &&
         usuariosExists &&
         fornecedoresExists &&
-        estoqueTamanhosExists,
+        estoqueTamanhosExists &&
+        tamanhosPedidoExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -220,6 +230,7 @@ export async function checkTablesExist() {
       usuariosExists: false,
       fornecedoresExists: false,
       estoqueTamanhosExists: false,
+      tamanhosPedidoExists: false,
       allExist: false,
     }
   }
@@ -1555,6 +1566,9 @@ export async function getPedidoById(id: number) {
   }
 }
 
+// Agora, vamos modificar a função addPedido para garantir que os tamanhos sejam salvos corretamente
+// Substitua a função addPedido pela versão abaixo:
+
 export async function addPedido(
   pedido: Omit<Pedido, "id">,
   itens: Omit<ItemPedido, "id" | "pedido_id">[],
@@ -1608,6 +1622,8 @@ export async function addPedido(
 
         // Se o item for do tipo "par" e tiver tamanhos, inserir os tamanhos
         if (item.tipo_estoque === "par" && item.tamanhos && item.tamanhos.length > 0 && itemInserido) {
+          console.log(`Salvando ${item.tamanhos.length} tamanhos para o item ${item.nome}:`, item.tamanhos)
+
           const tamanhosPedido = item.tamanhos.map((t) => ({
             pedido_id: pedidoId,
             item_pedido_id: itemInserido[0].id,
@@ -1621,6 +1637,8 @@ export async function addPedido(
             console.error("Erro ao adicionar tamanhos do item:", tamanhoError)
             throw tamanhoError
           }
+
+          console.log(`Tamanhos salvos com sucesso para o item ${item.nome}`)
         }
       }
     }
@@ -1651,6 +1669,9 @@ export async function addPedido(
 }
 
 // Modificar a função updatePedidoStatus para usar fornecedor em vez de fornecedor_id
+// Agora, vamos modificar a função updatePedidoStatus para garantir que os tamanhos específicos sejam respeitados
+// Substitua a função updatePedidoStatus pela versão abaixo:
+
 export async function updatePedidoStatus(id: number, status: string, notaFiscal?: string) {
   try {
     const updateData: any = { status }
@@ -1699,6 +1720,15 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
 
         const categoriaNome = categoriaData ? categoriaData.nome : item.categoria
 
+        // Buscar os tamanhos específicos do item
+        const { data: tamanhosPedido } = await supabase
+          .from("tamanhos_item_pedido")
+          .select("*")
+          .eq("pedido_id", id)
+          .eq("item_pedido_id", item.id)
+
+        console.log(`Item ${item.nome}: Tamanhos encontrados:`, tamanhosPedido)
+
         if (produtosExistentes && produtosExistentes.length > 0) {
           // Atualizar o produto existente
           const produto = produtosExistentes[0]
@@ -1715,11 +1745,11 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
               .eq("id", produto.id)
 
             // Verificar se o item tem tamanhos específicos
-            if (item.tamanhos && item.tamanhos.length > 0) {
-              console.log(`Produto ${item.nome} tem ${item.tamanhos.length} tamanhos específicos:`, item.tamanhos)
+            if (tamanhosPedido && tamanhosPedido.length > 0) {
+              console.log(`Produto ${item.nome} tem ${tamanhosPedido.length} tamanhos específicos:`, tamanhosPedido)
 
               // Atualizar os tamanhos específicos
-              for (const tamanhoItem of item.tamanhos) {
+              for (const tamanhoItem of tamanhosPedido) {
                 // Verificar se já existe registro para este tamanho
                 const { data: estoqueTamanho } = await supabase
                   .from("estoque_tamanhos")
@@ -1858,11 +1888,14 @@ export async function updatePedidoStatus(id: number, status: string, notaFiscal?
 
           // Se for produto do tipo "par", criar registros de estoque por tamanho
           if (item.tipo_estoque === "par" && novoProduto && novoProduto.length > 0) {
-            if (item.tamanhos && item.tamanhos.length > 0) {
+            if (tamanhosPedido && tamanhosPedido.length > 0) {
               // Se tiver tamanhos específicos, usar esses tamanhos
-              console.log(`Novo produto ${item.nome} com ${item.tamanhos.length} tamanhos específicos:`, item.tamanhos)
+              console.log(
+                `Novo produto ${item.nome} com ${tamanhosPedido.length} tamanhos específicos:`,
+                tamanhosPedido,
+              )
 
-              const estoquesParaInserir = item.tamanhos.map((t) => ({
+              const estoquesParaInserir = tamanhosPedido.map((t) => ({
                 produto_id: novoProduto[0].id,
                 tamanho: t.tamanho,
                 quantidade: t.quantidade,
