@@ -98,6 +98,11 @@ export default function Estoque() {
         return ordenacao.direcao === "asc" ? a.estoque - b.estoque : b.estoque - a.estoque
       } else if (ordenacao.campo === "nome") {
         return ordenacao.direcao === "asc" ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome)
+      } else if (ordenacao.campo === "marca") {
+        // Adicionar ordenação por marca
+        const marcaA = a.marca || "Sem marca"
+        const marcaB = b.marca || "Sem marca"
+        return ordenacao.direcao === "asc" ? marcaA.localeCompare(marcaB) : marcaB.localeCompare(marcaA)
       } else {
         // Ordenação padrão por ID
         return ordenacao.direcao === "asc" ? a.id - b.id : b.id - a.id
@@ -110,6 +115,7 @@ export default function Estoque() {
     produtos.filter(
       (produto) =>
         produto.nome.toLowerCase().includes(busca.toLowerCase()) ||
+        (produto.marca && produto.marca.toLowerCase().includes(busca.toLowerCase())) ||
         produto.categoria.toLowerCase().includes(busca.toLowerCase()) ||
         produto.id.toString().includes(busca),
     ),
@@ -316,6 +322,12 @@ export default function Estoque() {
                   >
                     Nome {ordenacao.campo === "nome" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
                   </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => alternarOrdenacao("marca")}
+                  >
+                    Marca {ordenacao.campo === "marca" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Categoria
                   </th>
@@ -353,6 +365,9 @@ export default function Estoque() {
                   <tr key={produto.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{produto.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{produto.nome}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {produto.marca || "Sem marca"}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.categoria}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatarPreco(produto.custo || 0)}
@@ -397,7 +412,7 @@ export default function Estoque() {
                 ))}
                 {produtosFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={10} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum produto encontrado
                     </td>
                   </tr>

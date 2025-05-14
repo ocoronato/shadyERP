@@ -145,6 +145,10 @@ export default function ProdutoDetalhes({ params }: { params: { id: string } }) 
                       <p className="font-medium">{produto.nome}</p>
                     </div>
                     <div>
+                      <p className="text-sm text-gray-500">Marca</p>
+                      <p className="font-medium">{produto.marca || "Sem marca"}</p>
+                    </div>
+                    <div>
                       <p className="text-sm text-gray-500">Categoria</p>
                       <p className="font-medium">{produto.categoria}</p>
                     </div>

@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getFornecedores } from "@/lib/supabase"
+import { getFornecedores, getMarcas } from "@/lib/supabase"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -16,6 +16,7 @@ const TAMANHOS_DISPONIVEIS = Array.from({ length: 50 }, (_, i) => i + 1)
 export default function NovoPedidoPage() {
   const [etapa, setEtapa] = useState(1)
   const [fornecedores, setFornecedores] = useState<any[]>([])
+  const [marcas, setMarcas] = useState<any[]>([])
   const [formData, setFormData] = useState({
     marca: "",
     fornecedor_id: "",
@@ -25,16 +26,21 @@ export default function NovoPedidoPage() {
   })
 
   useEffect(() => {
-    async function loadFornecedores() {
+    async function loadData() {
       try {
-        const data = await getFornecedores()
-        setFornecedores(data)
+        // Carregar fornecedores
+        const fornecedoresData = await getFornecedores()
+        setFornecedores(fornecedoresData)
+
+        // Carregar marcas
+        const marcasData = await getMarcas()
+        setMarcas(marcasData)
       } catch (error) {
-        console.error("Erro ao carregar fornecedores:", error)
+        console.error("Erro ao carregar dados:", error)
       }
     }
 
-    loadFornecedores()
+    loadData()
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -90,13 +96,19 @@ export default function NovoPedidoPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Marca</label>
-                <input
-                  type="text"
+                <select
                   name="marca"
                   value={formData.marca}
                   onChange={handleChange}
                   className="w-full border rounded-md p-2"
-                />
+                >
+                  <option value="">Selecione uma marca</option>
+                  {marcas.map((marca) => (
+                    <option key={marca.id} value={marca.id}>
+                      {marca.nome}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

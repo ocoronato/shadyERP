@@ -27,11 +27,19 @@ export type Categoria = {
   created_at?: string
 }
 
-// Atualizar o tipo Produto para incluir o campo tipo_estoque
+// Adicionar o tipo Marca
+export type Marca = {
+  id: number
+  nome: string
+  created_at?: string
+}
+
+// Atualizar o tipo Produto para incluir o campo tipo_estoque e marca
 export type Produto = {
   id: number
   nome: string
   categoria: string
+  marca: string // Novo campo
   preco: number
   custo: number
   estoque: number
@@ -187,6 +195,10 @@ export async function checkTablesExist() {
     const { error: pedidosError } = await supabase.from("pedidos").select("id").limit(1)
     const pedidosExists = !pedidosError
 
+    // Verificar se a tabela marcas existe
+    const { error: marcasError } = await supabase.from("marcas").select("id").limit(1)
+    const marcasExists = !marcasError
+
     return {
       clientesExists,
       produtosExists,
@@ -197,6 +209,7 @@ export async function checkTablesExist() {
       fornecedoresExists,
       estoqueTamanhosExists,
       pedidosExists,
+      marcasExists,
       allExist:
         clientesExists &&
         produtosExists &&
@@ -206,7 +219,8 @@ export async function checkTablesExist() {
         usuariosExists &&
         fornecedoresExists &&
         estoqueTamanhosExists &&
-        pedidosExists,
+        pedidosExists &&
+        marcasExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -220,8 +234,115 @@ export async function checkTablesExist() {
       fornecedoresExists: false,
       estoqueTamanhosExists: false,
       pedidosExists: false,
+      marcasExists: false,
       allExist: false,
     }
+  }
+}
+
+// Funções para marcas
+export async function getMarcas() {
+  try {
+    const { data, error } = await supabase.from("marcas").select("*").order("nome", { ascending: true })
+
+    if (error) {
+      console.error("Erro ao buscar marcas:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar marcas:", error)
+    return []
+  }
+}
+
+export async function addMarca(marca: Omit<Marca, "id">) {
+  try {
+    // Verificar se a marca já existe
+    const { data: existingMarca, error: checkError } = await supabase
+      .from("marcas")
+      .select("id")
+      .eq("nome", marca.nome)
+      .single()
+
+    if (!checkError && existingMarca) {
+      throw new Error("Uma marca com este nome já existe.")
+    }
+
+    const { data, error } = await supabase.from("marcas").insert([marca]).select()
+
+    if (error) {
+      console.error("Erro ao adicionar marca:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao adicionar marca:", error)
+    throw error
+  }
+}
+
+export async function updateMarca(id: number, marca: Partial<Marca>) {
+  try {
+    // Verificar se já existe outra marca com o mesmo nome
+    if (marca.nome) {
+      const { data: existingMarca, error: checkError } = await supabase
+        .from("marcas")
+        .select("id")
+        .eq("nome", marca.nome)
+        .neq("id", id)
+        .single()
+
+      if (!checkError && existingMarca) {
+        throw new Error("Uma marca com este nome já existe.")
+      }
+    }
+
+    const { data, error } = await supabase.from("marcas").update(marca).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar marca:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar marca:", error)
+    throw error
+  }
+}
+
+export async function deleteMarca(id: number) {
+  try {
+    // Verificar se a marca está sendo usada em algum produto
+    const { data: produtos, error: produtosError } = await supabase
+      .from("produtos")
+      .select("id")
+      .eq("marca", id.toString())
+      .limit(1)
+
+    if (produtosError) {
+      console.error("Erro ao verificar uso da marca:", produtosError)
+      throw produtosError
+    }
+
+    if (produtos && produtos.length > 0) {
+      throw new Error("Esta marca não pode ser excluída porque está sendo usada em produtos.")
+    }
+
+    const { error } = await supabase.from("marcas").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir marca:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir marca:", error)
+    throw error
   }
 }
 
@@ -1667,11 +1788,3 @@ export async function deletePedido(id: number) {
     throw error
   }
 }
-
-// Não é necessário alterar as funções getContasPagar, addContaPagar, updateContaPagar e deleteContaPagar
-// pois elas já lidam com os dados de forma genérica
-
-// Certifique-se de que todas as funções de obtenção de dados estejam exportadas
-// As funções getClientes, getProdutos, getCategorias, getVendas, getUsuarios,
-// getFornecedores, getContasPagar, getContasReceber já estão implementadas
-// e são usadas na função de exportação do banco de dados

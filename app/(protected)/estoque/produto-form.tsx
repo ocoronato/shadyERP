@@ -14,9 +14,11 @@ import {
   addProduto,
   updateProduto,
   getCategorias,
+  getMarcas,
   getEstoqueTamanhos,
   type Produto,
   type Categoria,
+  type Marca,
 } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 
@@ -27,16 +29,18 @@ interface ProdutoFormProps {
 }
 
 export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormProps) {
-  // Atualizar o estado inicial do formulário para incluir o campo custo
+  // Atualizar o estado inicial do formulário para incluir o campo marca
   const [formData, setFormData] = useState({
     nome: "",
     categoria: "",
+    marca: "", // Novo campo
     preco: "",
     custo: "",
     estoque: "",
     tipo_estoque: "unidade" as "unidade" | "par",
   })
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [marcas, setMarcas] = useState<Marca[]>([]) // Novo estado para marcas
   const [estoqueTamanhos, setEstoqueTamanhos] = useState<{ tamanho: number; quantidade: number }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -48,8 +52,13 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
   useEffect(() => {
     async function carregarDados() {
       try {
-        const categoriasData = await getCategorias()
+        const [categoriasData, marcasData] = await Promise.all([
+          getCategorias(),
+          getMarcas(), // Carregar marcas
+        ])
+
         setCategorias(categoriasData)
+        setMarcas(marcasData) // Definir marcas
 
         if (produto?.id && produto.tipo_estoque === "par") {
           const estoqueTamanhosData = await getEstoqueTamanhos(produto.id)
@@ -89,6 +98,7 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
       setFormData({
         nome: produto.nome || "",
         categoria: produto.categoria || "",
+        marca: produto.marca || "", // Incluir marca
         preco: produto.preco ? produto.preco.toString() : "",
         custo: produto.custo ? produto.custo.toString() : "",
         estoque: produto.estoque ? produto.estoque.toString() : "",
@@ -106,6 +116,10 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     setFormData((prev) => ({ ...prev, categoria: value }))
   }
 
+  const handleMarcaChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, marca: value }))
+  }
+
   const handleTipoEstoqueChange = (value: "unidade" | "par") => {
     setFormData((prev) => ({ ...prev, tipo_estoque: value }))
   }
@@ -119,13 +133,14 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     return estoqueTamanhos.reduce((total, et) => total + et.quantidade, 0)
   }
 
-  // Atualizar a função handleSubmit para incluir o campo custo
+  // Atualizar a função handleSubmit para incluir o campo marca
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.nome || !formData.categoria) {
+    if (!formData.nome || !formData.categoria || !formData.marca) {
+      // Validar marca
       toast({
         title: "Campos obrigatórios",
-        description: "Nome e categoria são obrigatórios!",
+        description: "Nome, categoria e marca são obrigatórios!",
         variant: "destructive",
       })
       return
@@ -137,6 +152,7 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
       const produtoFinal = {
         nome: formData.nome,
         categoria: formData.categoria,
+        marca: formData.marca, // Incluir marca
         preco: Number.parseFloat(formData.preco) || 0,
         custo: Number.parseFloat(formData.custo) || 0,
         estoque: formData.tipo_estoque === "unidade" ? Number.parseInt(formData.estoque) || 0 : calcularEstoqueTotal(),
@@ -218,6 +234,22 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
               <SelectValue placeholder="Selecione uma categoria" />
             </SelectTrigger>
             <SelectContent>{renderizarOpcoesCategoria(categoriasHierarquicas)}</SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="marca">Marca</Label>
+          <Select value={formData.marca} onValueChange={handleMarcaChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma marca" />
+            </SelectTrigger>
+            <SelectContent>
+              {marcas.map((marca) => (
+                <SelectItem key={marca.id} value={marca.nome}>
+                  {marca.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
 

@@ -9,6 +9,7 @@ import {
   LucideTag,
   LucideBuilding,
   LucideShoppingBag,
+  LucideBookmark,
 } from "lucide-react"
 
 export default function CadastroMenu() {
@@ -56,6 +57,14 @@ export default function CadastroMenu() {
             >
               <LucideBuilding className="mr-2 h-4 w-4" />
               Fornecedores
+            </Link>
+            <Link
+              href="/marcas"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsOpen(false)}
+            >
+              <LucideBookmark className="mr-2 h-4 w-4" />
+              Marcas
             </Link>
             <Link
               href="/categorias"
