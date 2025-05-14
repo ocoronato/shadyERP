@@ -5,9 +5,28 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { LucidePlus, LucideSearch, LucideEdit, LucideTrash, LucideRefreshCw, LucideLoader2 } from "lucide-react"
+import {
+  LucidePlus,
+  LucideSearch,
+  LucideEdit,
+  LucideTrash,
+  LucideRefreshCw,
+  LucideLoader2,
+  LucideDownload,
+} from "lucide-react"
 import UsuarioForm from "./usuario-form"
-import { getUsuarios, deleteUsuario, type Usuario } from "@/lib/supabase"
+import {
+  getUsuarios,
+  deleteUsuario,
+  type Usuario,
+  getClientes,
+  getProdutos,
+  getCategorias,
+  getVendas,
+  getFornecedores,
+  getContasPagar,
+  getContasReceber,
+} from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -99,6 +118,67 @@ export default function Usuarios() {
     }
   }
 
+  const exportarBancoDados = async () => {
+    try {
+      setIsLoading(true)
+
+      // Buscar dados de todas as tabelas principais
+      const clientes = await getClientes()
+      const produtos = await getProdutos()
+      const categorias = await getCategorias()
+      const vendas = await getVendas()
+      const usuarios = await getUsuarios()
+      const fornecedores = await getFornecedores()
+      const contasPagar = await getContasPagar()
+      const contasReceber = await getContasReceber()
+
+      // Criar objeto com todos os dados
+      const bancoDados = {
+        clientes,
+        produtos,
+        categorias,
+        vendas,
+        usuarios,
+        fornecedores,
+        contasPagar,
+        contasReceber,
+        dataExportacao: new Date().toISOString(),
+      }
+
+      // Converter para JSON e criar blob
+      const jsonString = JSON.stringify(bancoDados, null, 2)
+      const blob = new Blob([jsonString], { type: "application/json" })
+
+      // Criar URL para download
+      const url = URL.createObjectURL(blob)
+
+      // Criar elemento de link e simular clique
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `backup-sistema-${new Date().toISOString().split("T")[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+
+      // Limpar
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast({
+        title: "Exportação concluída",
+        description: "O banco de dados foi exportado com sucesso.",
+      })
+    } catch (error) {
+      console.error("Erro ao exportar banco de dados:", error)
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar o banco de dados.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const editarUsuario = (usuario: Usuario) => {
     setUsuarioEditando(usuario)
     setMostrarForm(true)
@@ -147,14 +227,19 @@ export default function Usuarios() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Usuários</h1>
-          <Button
-            onClick={() => {
-              setUsuarioEditando(null)
-              setMostrarForm(true)
-            }}
-          >
-            <LucidePlus className="h-4 w-4 mr-2" /> Novo Usuário
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportarBancoDados} disabled={isLoading}>
+              <LucideDownload className="h-4 w-4 mr-2" /> Exportar Banco de Dados
+            </Button>
+            <Button
+              onClick={() => {
+                setUsuarioEditando(null)
+                setMostrarForm(true)
+              }}
+            >
+              <LucidePlus className="h-4 w-4 mr-2" /> Novo Usuário
+            </Button>
+          </div>
         </div>
 
         {mostrarForm ? (

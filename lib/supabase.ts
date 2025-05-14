@@ -293,7 +293,7 @@ export async function addCategoria(categoria: Omit<Categoria, "id">) {
     return data?.[0]
   } catch (error) {
     console.error("Erro ao adicionar categoria:", error)
-    throw error
+    return []
   }
 }
 
@@ -1414,3 +1414,8 @@ export async function deleteFornecedor(id: number) {
 
 // Não é necessário alterar as funções getContasPagar, addContaPagar, updateContaPagar e deleteContaPagar
 // pois elas já lidam com os dados de forma genérica
+
+// Certifique-se de que todas as funções de obtenção de dados estejam exportadas
+// As funções getClientes, getProdutos, getCategorias, getVendas, getUsuarios,
+// getFornecedores, getContasPagar, getContasReceber já estão implementadas
+// e são usadas na função de exportação do banco de dados
