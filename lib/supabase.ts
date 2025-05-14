@@ -119,6 +119,35 @@ export type Fornecedor = {
   created_at?: string
 }
 
+// Adicionar tipos para Pedidos
+export type Pedido = {
+  id: number
+  cliente_id?: number
+  cliente?: string
+  marca?: string
+  fornecedor_id?: number
+  fornecedor_nome?: string
+  previsao_entrega?: string
+  valor_total?: number
+  desconto?: number
+  forma_pagamento?: string
+  parcelas?: number
+  status: string
+  observacoes?: string
+  created_at?: string
+}
+
+export type ItemPedido = {
+  id?: number
+  pedido_id?: number
+  produto_id: number
+  produto_nome: string
+  quantidade: number
+  preco_unitario: number
+  tamanho?: string
+  created_at?: string
+}
+
 // Função para verificar se as tabelas existem
 export async function checkTablesExist() {
   try {
@@ -154,6 +183,10 @@ export async function checkTablesExist() {
     const { error: estoqueTamanhosError } = await supabase.from("estoque_tamanhos").select("id").limit(1)
     const estoqueTamanhosExists = !estoqueTamanhosError
 
+    // Verificar se a tabela pedidos existe
+    const { error: pedidosError } = await supabase.from("pedidos").select("id").limit(1)
+    const pedidosExists = !pedidosError
+
     return {
       clientesExists,
       produtosExists,
@@ -163,6 +196,7 @@ export async function checkTablesExist() {
       usuariosExists,
       fornecedoresExists,
       estoqueTamanhosExists,
+      pedidosExists,
       allExist:
         clientesExists &&
         produtosExists &&
@@ -171,7 +205,8 @@ export async function checkTablesExist() {
         categoriasExists &&
         usuariosExists &&
         fornecedoresExists &&
-        estoqueTamanhosExists,
+        estoqueTamanhosExists &&
+        pedidosExists,
     }
   } catch (error) {
     console.error("Erro ao verificar tabelas:", error)
@@ -184,6 +219,7 @@ export async function checkTablesExist() {
       usuariosExists: false,
       fornecedoresExists: false,
       estoqueTamanhosExists: false,
+      pedidosExists: false,
       allExist: false,
     }
   }
@@ -374,6 +410,22 @@ export async function getProdutoByNome(nome: string) {
     return data
   } catch (error) {
     console.error("Erro ao buscar produto por nome:", error)
+    return null
+  }
+}
+
+export async function getProdutoById(id: number) {
+  try {
+    const { data, error } = await supabase.from("produtos").select("*").eq("id", id).single()
+
+    if (error) {
+      console.error("Erro ao buscar produto por ID:", error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error("Erro ao buscar produto por ID:", error)
     return null
   }
 }
@@ -1444,6 +1496,174 @@ export async function deleteFornecedor(id: number) {
     return true
   } catch (error) {
     console.error("Erro ao excluir fornecedor:", error)
+    throw error
+  }
+}
+
+// Funções para pedidos
+export async function getPedidos() {
+  try {
+    const { data, error } = await supabase.from("pedidos").select("*").order("id", { ascending: false })
+
+    if (error) {
+      console.error("Erro ao buscar pedidos:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar pedidos:", error)
+    return []
+  }
+}
+
+export async function getPedidoById(id: number) {
+  try {
+    const { data, error } = await supabase.from("pedidos").select("*").eq("id", id).single()
+
+    if (error) {
+      console.error("Erro ao buscar pedido por ID:", error)
+      return null
+    }
+
+    return data
+  } catch (error) {
+    console.error("Erro ao buscar pedido por ID:", error)
+    return null
+  }
+}
+
+export async function getProdutosPedido(pedidoId: number) {
+  try {
+    const { data, error } = await supabase.from("itens_pedido").select("*").eq("pedido_id", pedidoId)
+
+    if (error) {
+      console.error("Erro ao buscar produtos do pedido:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("Erro ao buscar produtos do pedido:", error)
+    return []
+  }
+}
+
+export async function createPedido(pedidoData: {
+  cliente_id?: string
+  cliente?: string
+  marca?: string
+  fornecedor_id?: string
+  fornecedor_nome?: string
+  previsao_entrega?: string
+  valor_total?: number
+  desconto?: number
+  forma_pagamento?: string
+  parcelas?: number
+  observacoes?: string
+  status: string
+  itens?: { produto_id: string; quantidade: number; tamanho?: string; preco_unitario: number }[]
+}) {
+  try {
+    // Inserir o pedido
+    const { data: pedidoInserido, error } = await supabase
+      .from("pedidos")
+      .insert([
+        {
+          cliente_id: pedidoData.cliente_id ? Number.parseInt(pedidoData.cliente_id) : null,
+          cliente: pedidoData.cliente || null,
+          marca: pedidoData.marca || null,
+          fornecedor_id: pedidoData.fornecedor_id ? Number.parseInt(pedidoData.fornecedor_id) : null,
+          previsao_entrega: pedidoData.previsao_entrega || null,
+          valor_total: pedidoData.valor_total || 0,
+          desconto: pedidoData.desconto || 0,
+          forma_pagamento: pedidoData.forma_pagamento || null,
+          parcelas: pedidoData.parcelas || 1,
+          status: pedidoData.status,
+          observacoes: pedidoData.observacoes || null,
+        },
+      ])
+      .select()
+
+    if (error) {
+      console.error("Erro ao criar pedido:", error)
+      throw error
+    }
+
+    const pedidoId = pedidoInserido[0].id
+
+    // Processar os itens do pedido (se houver)
+    if (pedidoData.itens && pedidoData.itens.length > 0) {
+      const itensProcessados = await Promise.all(
+        pedidoData.itens.map(async (item) => {
+          const produtoId = Number.parseInt(item.produto_id)
+          const produto = await getProdutoById(produtoId)
+          return {
+            pedido_id: pedidoId,
+            produto_id: produtoId,
+            produto_nome: produto?.nome || "Produto não encontrado",
+            quantidade: item.quantidade,
+            preco_unitario: item.preco_unitario,
+            tamanho: item.tamanho,
+          }
+        }),
+      )
+
+      // Inserir os itens do pedido
+      const { error: erroItens } = await supabase.from("itens_pedido").insert(itensProcessados)
+
+      if (erroItens) {
+        console.error("Erro ao adicionar itens do pedido:", erroItens)
+        // Remover o pedido se houver erro ao adicionar os itens
+        await supabase.from("pedidos").delete().eq("id", pedidoId)
+        throw erroItens
+      }
+    }
+
+    return pedidoId
+  } catch (error) {
+    console.error("Erro ao criar pedido:", error)
+    throw error
+  }
+}
+
+export async function updatePedidoStatus(id: number, status: string) {
+  try {
+    const { data, error } = await supabase.from("pedidos").update({ status }).eq("id", id).select()
+
+    if (error) {
+      console.error("Erro ao atualizar status do pedido:", error)
+      throw error
+    }
+
+    return data?.[0]
+  } catch (error) {
+    console.error("Erro ao atualizar status do pedido:", error)
+    throw error
+  }
+}
+
+export async function deletePedido(id: number) {
+  try {
+    // Primeiro, excluir os itens do pedido
+    const { error: erroItens } = await supabase.from("itens_pedido").delete().eq("pedido_id", id)
+
+    if (erroItens) {
+      console.error("Erro ao excluir itens do pedido:", erroItens)
+      throw erroItens
+    }
+
+    // Depois, excluir o pedido
+    const { error } = await supabase.from("pedidos").delete().eq("id", id)
+
+    if (error) {
+      console.error("Erro ao excluir pedido:", error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error("Erro ao excluir pedido:", error)
     throw error
   }
 }
