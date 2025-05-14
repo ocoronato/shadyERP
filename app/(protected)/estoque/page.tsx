@@ -21,7 +21,7 @@ import { getProdutos, deleteProduto, type Produto, checkTablesExist } from "@/li
 import { useToast } from "@/hooks/use-toast"
 import InitializeDatabase from "@/components/initialize-database"
 
-export default function Produtos() {
+export default function Estoque() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [busca, setBusca] = useState("")
   const [mostrarForm, setMostrarForm] = useState(false)
@@ -31,6 +31,13 @@ export default function Produtos() {
   const [needsInitialization, setNeedsInitialization] = useState(false)
   const [showInitialize, setShowInitialize] = useState(false)
   const { toast } = useToast()
+
+  // Adicionar função para calcular a margem de lucro
+  const calcularMargem = (preco: number, custo: number) => {
+    if (custo === 0) return 0
+    const margem = ((preco - custo) / preco) * 100
+    return Math.round(margem * 100) / 100 // Arredondar para 2 casas decimais
+  }
 
   const verificarTabelas = async () => {
     const tablesStatus = await checkTablesExist()
@@ -141,7 +148,7 @@ export default function Produtos() {
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Produtos</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Estoque</h1>
           </div>
           <Card className="p-6">
             <div className="flex justify-center items-center h-32">
@@ -159,7 +166,7 @@ export default function Produtos() {
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Produtos</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Estoque</h1>
           </div>
           <Card className="p-6">
             <div className="flex flex-col justify-center items-center gap-4">
@@ -182,7 +189,7 @@ export default function Produtos() {
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Produtos</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Estoque</h1>
             <Button onClick={() => setShowInitialize(true)}>
               <LucideDatabase className="h-4 w-4 mr-2" /> Inicializar Banco de Dados
             </Button>
@@ -204,7 +211,7 @@ export default function Produtos() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Produtos</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Estoque</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowInitialize(true)}>
               <LucideDatabase className="h-4 w-4 mr-2" /> Inicializar BD
@@ -261,7 +268,13 @@ export default function Produtos() {
                     Categoria
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Preço
+                    Custo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Preço Venda
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Margem
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Estoque
@@ -281,7 +294,13 @@ export default function Produtos() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{produto.nome}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.categoria}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatarPreco(produto.custo || 0)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatarPreco(produto.preco)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {calcularMargem(produto.preco, produto.custo || 0)}%
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.estoque}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -309,7 +328,7 @@ export default function Produtos() {
                 ))}
                 {produtosFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum produto encontrado
                     </td>
                   </tr>

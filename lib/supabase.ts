@@ -33,6 +33,7 @@ export type Produto = {
   nome: string
   categoria: string
   preco: number
+  custo: number
   estoque: number
   tipo_estoque: "unidade" | "par"
   created_at?: string

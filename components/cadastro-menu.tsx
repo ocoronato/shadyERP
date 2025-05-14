@@ -59,12 +59,12 @@ export default function CadastroMenu() {
               Categorias
             </Link>
             <Link
-              href="/produtos"
+              href="/estoque"
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               onClick={() => setIsOpen(false)}
             >
               <LucidePackage className="mr-2 h-4 w-4" />
-              Produtos
+              Estoque
             </Link>
           </div>
         </div>

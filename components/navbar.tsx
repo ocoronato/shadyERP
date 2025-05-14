@@ -134,12 +134,12 @@ export default function Navbar() {
                 Categorias
               </Link>
               <Link
-                href="/produtos"
+                href="/estoque"
                 className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
                 onClick={() => setIsOpen(false)}
               >
                 <LucidePackage className="inline-block h-4 w-4 mr-2" />
-                Produtos
+                Estoque
               </Link>
             </div>
 

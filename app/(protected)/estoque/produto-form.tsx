@@ -27,10 +27,12 @@ interface ProdutoFormProps {
 }
 
 export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormProps) {
+  // Atualizar o estado inicial do formulário para incluir o campo custo
   const [formData, setFormData] = useState({
     nome: "",
     categoria: "",
     preco: "",
+    custo: "",
     estoque: "",
     tipo_estoque: "unidade" as "unidade" | "par",
   })
@@ -81,12 +83,14 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     carregarDados()
   }, [produto, toast])
 
+  // Atualizar o useEffect que preenche o formulário quando estiver editando
   useEffect(() => {
     if (produto) {
       setFormData({
         nome: produto.nome || "",
         categoria: produto.categoria || "",
         preco: produto.preco ? produto.preco.toString() : "",
+        custo: produto.custo ? produto.custo.toString() : "",
         estoque: produto.estoque ? produto.estoque.toString() : "",
         tipo_estoque: produto.tipo_estoque || "unidade",
       })
@@ -115,6 +119,7 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
     return estoqueTamanhos.reduce((total, et) => total + et.quantidade, 0)
   }
 
+  // Atualizar a função handleSubmit para incluir o campo custo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.nome || !formData.categoria) {
@@ -133,6 +138,7 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
         nome: formData.nome,
         categoria: formData.categoria,
         preco: Number.parseFloat(formData.preco) || 0,
+        custo: Number.parseFloat(formData.custo) || 0,
         estoque: formData.tipo_estoque === "unidade" ? Number.parseInt(formData.estoque) || 0 : calcularEstoqueTotal(),
         tipo_estoque: formData.tipo_estoque,
       }
@@ -192,7 +198,6 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
   return (
     <form onSubmit={handleSubmit}>
       <h2 className="text-lg font-medium mb-4">{produto ? "Editar Produto" : "Novo Produto"}</h2>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="space-y-2">
           <Label htmlFor="nome">Nome</Label>
@@ -217,7 +222,22 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="preco">Preço (R$)</Label>
+          <Label htmlFor="custo">Custo (R$)</Label>
+          <Input
+            id="custo"
+            name="custo"
+            type="number"
+            step="0.01"
+            min="0"
+            value={formData.custo}
+            onChange={handleChange}
+            placeholder="0.00"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="preco">Preço de Venda (R$)</Label>
           <Input
             id="preco"
             name="preco"
@@ -253,7 +273,6 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
           </RadioGroup>
         </div>
       </div>
-
       {formData.tipo_estoque === "unidade" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="space-y-2">
@@ -332,7 +351,6 @@ export default function ProdutoForm({ produto, onSave, onCancel }: ProdutoFormPr
           </Card>
         </div>
       )}
-
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
