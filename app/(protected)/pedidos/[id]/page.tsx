@@ -156,19 +156,19 @@ export default function DetalhesPedido({ params }: { params: { id: string } }) {
   const renderizarGradeTamanhos = (tamanhos) => {
     if (!tamanhos || tamanhos.length === 0) return null
 
+    console.log("Renderizando tamanhos:", tamanhos)
+
     // Ordenar tamanhos
     const tamanhosSorted = [...tamanhos].sort((a, b) => a.tamanho - b.tamanho)
 
     return (
       <div className="mt-2">
-        <p className="text-xs text-gray-500 mb-1">Grade de tamanhos:</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-xs font-medium text-gray-700 mb-1">Grade de tamanhos:</p>
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1">
           {tamanhosSorted.map((t) => (
             <div key={t.tamanho} className="flex items-center justify-between bg-gray-100 rounded-md px-2 py-1">
-              <span className="text-xs font-medium mr-2">Tam {t.tamanho}:</span>
-              <span className="text-xs">
-                {t.quantidade} {t.quantidade > 1 ? "pares" : "par"}
-              </span>
+              <span className="text-xs font-medium mr-1">Tam {t.tamanho}:</span>
+              <span className="text-xs font-semibold">{t.quantidade}</span>
             </div>
           ))}
         </div>
@@ -342,7 +342,7 @@ export default function DetalhesPedido({ params }: { params: { id: string } }) {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {pedido.itens.map((item: any, index: number) => (
                     <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
                         <div>
                           {item.nome}
                           {item.tipo_estoque === "par" &&

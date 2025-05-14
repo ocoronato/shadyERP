@@ -305,7 +305,16 @@ export default function NovoPedidoPage() {
         return
       }
 
+      console.log("Tamanhos selecionados:", tamanhosSelecionados)
+
       // Adicionar o item com os tamanhos selecionados
+      const tamanhosFiltrados = tamanhosSelecionados.map((t) => ({
+        tamanho: t.tamanho,
+        quantidade: t.quantidade,
+      }))
+
+      console.log("Tamanhos filtrados para salvar:", tamanhosFiltrados)
+
       setItens([
         ...itens,
         {
@@ -314,7 +323,7 @@ export default function NovoPedidoPage() {
           quantidade: tamanhosSelecionados.reduce((sum, t) => sum + t.quantidade, 0),
           preco_unitario: preco,
           categoria: itemCategoria,
-          tamanhos: tamanhosSelecionados.map((t) => ({ tamanho: t.tamanho, quantidade: t.quantidade })),
+          tamanhos: tamanhosFiltrados,
         },
       ])
     } else {
