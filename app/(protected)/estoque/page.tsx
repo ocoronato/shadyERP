@@ -32,6 +32,12 @@ export default function Estoque() {
   const [showInitialize, setShowInitialize] = useState(false)
   const { toast } = useToast()
 
+  // Adicionar estado para controlar a ordenação
+  const [ordenacao, setOrdenacao] = useState<{ campo: string; direcao: "asc" | "desc" }>({
+    campo: "id",
+    direcao: "asc",
+  })
+
   // Adicionar função para calcular a margem de lucro
   const calcularMargem = (preco: number, custo: number) => {
     if (custo === 0) return 0
@@ -79,12 +85,50 @@ export default function Estoque() {
     carregarProdutos()
   }, [])
 
-  const produtosFiltrados = produtos.filter(
-    (produto) =>
-      produto.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      produto.categoria.toLowerCase().includes(busca.toLowerCase()) ||
-      produto.id.toString().includes(busca),
+  // Função para ordenar produtos
+  const ordenarProdutos = (produtos: Produto[]) => {
+    return [...produtos].sort((a, b) => {
+      if (ordenacao.campo === "margem") {
+        const margemA = calcularMargem(a.preco, a.custo || 0)
+        const margemB = calcularMargem(b.preco, b.custo || 0)
+        return ordenacao.direcao === "asc" ? margemA - margemB : margemB - margemA
+      } else if (ordenacao.campo === "preco") {
+        return ordenacao.direcao === "asc" ? a.preco - b.preco : b.preco - a.preco
+      } else if (ordenacao.campo === "estoque") {
+        return ordenacao.direcao === "asc" ? a.estoque - b.estoque : b.estoque - a.estoque
+      } else if (ordenacao.campo === "nome") {
+        return ordenacao.direcao === "asc" ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome)
+      } else {
+        // Ordenação padrão por ID
+        return ordenacao.direcao === "asc" ? a.id - b.id : b.id - a.id
+      }
+    })
+  }
+
+  // Modificar a função produtosFiltrados para incluir a ordenação
+  const produtosFiltrados = ordenarProdutos(
+    produtos.filter(
+      (produto) =>
+        produto.nome.toLowerCase().includes(busca.toLowerCase()) ||
+        produto.categoria.toLowerCase().includes(busca.toLowerCase()) ||
+        produto.id.toString().includes(busca),
+    ),
   )
+
+  // Adicionar função para alternar ordenação
+  const alternarOrdenacao = (campo: string) => {
+    if (ordenacao.campo === campo) {
+      setOrdenacao({
+        campo,
+        direcao: ordenacao.direcao === "asc" ? "desc" : "asc",
+      })
+    } else {
+      setOrdenacao({
+        campo,
+        direcao: "asc",
+      })
+    }
+  }
 
   const adicionarProduto = (novoProduto: Produto) => {
     setProdutos([...produtos, novoProduto])
@@ -260,9 +304,17 @@ export default function Estoque() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nome
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => alternarOrdenacao("id")}
+                  >
+                    ID {ordenacao.campo === "id" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => alternarOrdenacao("nome")}
+                  >
+                    Nome {ordenacao.campo === "nome" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Categoria
@@ -270,14 +322,23 @@ export default function Estoque() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Custo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Preço Venda
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => alternarOrdenacao("preco")}
+                  >
+                    Preço Venda {ordenacao.campo === "preco" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Margem
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => alternarOrdenacao("margem")}
+                  >
+                    Margem {ordenacao.campo === "margem" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estoque
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                    onClick={() => alternarOrdenacao("estoque")}
+                  >
+                    Estoque {ordenacao.campo === "estoque" && (ordenacao.direcao === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Tipo
@@ -299,8 +360,16 @@ export default function Estoque() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatarPreco(produto.preco)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {calcularMargem(produto.preco, produto.custo || 0)}%
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span
+                        className={`
+                          ${produto.custo && calcularMargem(produto.preco, produto.custo) > 40 ? "text-green-600 font-medium" : ""}
+                          ${produto.custo && calcularMargem(produto.preco, produto.custo) < 20 ? "text-red-600 font-medium" : ""}
+                          ${!produto.custo || (calcularMargem(produto.preco, produto.custo) >= 20 && calcularMargem(produto.preco, produto.custo) <= 40) ? "text-gray-500" : ""}
+                        `}
+                      >
+                        {calcularMargem(produto.preco, produto.custo || 0)}%
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.estoque}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

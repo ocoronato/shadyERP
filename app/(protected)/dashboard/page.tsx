@@ -3,14 +3,26 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { LucideUsers, LucidePackage, LucideShoppingCart, LucideDollarSign, LucideLoader2 } from "lucide-react"
-import { getDashboardData } from "@/lib/supabase"
+import { getDashboardData, getProdutos } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { VendasChart } from "@/components/vendas-chart"
+// Importar o componente MargemLucroChart
+import { MargemLucroChart } from "@/components/margem-lucro-chart"
+
+interface Produto {
+  id: string
+  nome: string
+  preco: number
+  custo: number
+}
 
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  // Adicionar estado para armazenar produtos
+  const [produtos, setProdutos] = useState<Produto[]>([])
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -33,6 +45,20 @@ export default function Dashboard() {
 
     loadDashboardData()
   }, [toast])
+
+  // Buscar produtos ao carregar a página
+  useEffect(() => {
+    async function carregarProdutos() {
+      try {
+        const produtosData = await getProdutos()
+        setProdutos(produtosData)
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error)
+      }
+    }
+
+    carregarProdutos()
+  }, [])
 
   const formatarPreco = (preco: number) => {
     return `R$ ${preco.toFixed(2).replace(".", ",")}`
@@ -124,9 +150,21 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Adicionar o componente MargemLucroChart em algum lugar apropriado na página
+        Por exemplo, após os cards de estatísticas: */}
+        <div className="grid grid-cols-1 gap-6 mt-6">
+          <MargemLucroChart produtos={produtos} />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Vendas Recentes</h2>
+
+            {/* Gráfico de Vendas */}
+            <div className="mb-6">
+              <VendasChart dados={dashboardData.dadosGrafico || []} />
+            </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">

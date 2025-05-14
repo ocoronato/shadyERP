@@ -10,6 +10,9 @@ import ProdutoForm from "../produto-form"
 import { getProdutos, type Produto } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 
+// Importar o componente MargemLucroBadge
+import { MargemLucroBadge } from "@/components/margem-lucro-badge"
+
 // Adicionar função para calcular a margem de lucro
 const calcularMargem = (preco: number, custo: number) => {
   if (custo === 0) return 0
@@ -153,9 +156,13 @@ export default function ProdutoDetalhes({ params }: { params: { id: string } }) 
                       <p className="text-sm text-gray-500">Preço de Venda</p>
                       <p className="font-medium text-blue-600">{formatarPreco(produto.preco)}</p>
                     </div>
+                    {/* Na seção onde exibe as informações do produto, adicionar uma visualização mais detalhada da margem: */}
                     <div>
                       <p className="text-sm text-gray-500">Margem de Lucro</p>
-                      <p className="font-medium">{calcularMargem(produto.preco, produto.custo || 0)}%</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="font-medium">{calcularMargem(produto.preco, produto.custo || 0)}%</p>
+                        <MargemLucroBadge preco={produto.preco} custo={produto.custo || 0} />
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -981,6 +981,41 @@ export async function getDashboardData() {
       throw errorVendasRecentes
     }
 
+    // Buscar vendas dos últimos 7 dias para o gráfico
+    const dataInicio = new Date()
+    dataInicio.setDate(dataInicio.getDate() - 30) // Últimos 30 dias
+
+    const { data: vendasGrafico, error: errorVendasGrafico } = await supabase
+      .from("vendas")
+      .select("data, total")
+      .neq("status", "Cancelada")
+      .order("data", { ascending: true })
+      .limit(30)
+
+    if (errorVendasGrafico) {
+      console.error("Erro ao buscar vendas para o gráfico:", errorVendasGrafico)
+      throw errorVendasGrafico
+    }
+
+    // Agrupar vendas por data para o gráfico
+    const vendasPorData = vendasGrafico?.reduce(
+      (acc, venda) => {
+        const data = venda.data
+        if (!acc[data]) {
+          acc[data] = 0
+        }
+        acc[data] += venda.total
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+
+    // Converter para o formato esperado pelo gráfico
+    const dadosGrafico = Object.entries(vendasPorData || {}).map(([data, total]) => ({
+      data,
+      total,
+    }))
+
     // Buscar itens de vendas não canceladas para calcular produtos mais vendidos
     // Primeiro, buscar todas as vendas não canceladas
     const { data: vendasNaoCanceladas, error: errorVendasNaoCanceladas } = await supabase
@@ -1036,6 +1071,7 @@ export async function getDashboardData() {
       receitaMensal,
       vendasRecentes: vendasRecentes || [],
       produtosMaisVendidos: produtosMaisVendidos.slice(0, 5), // Top 5 produtos
+      dadosGrafico, // Adicionar dados para o gráfico
     }
   } catch (error) {
     console.error("Erro ao buscar dados do dashboard:", error)
