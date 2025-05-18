@@ -68,7 +68,7 @@ Um sistema completo de gerenciamento empresarial desenvolvido com Next.js e Supa
 3. Configure as variáveis de ambiente com as credenciais do Supabase
 
 ### Instalação
-\`\`\`bash
+bash
 # Clone o repositório
 git clone https://github.com/ocoronato/shadyERP.git
 # Entre no diretório do projeto
@@ -81,20 +81,20 @@ yarn install
 
 # Configure as variáveis de ambiente
 cp .env.example .env.local
-\`\`\`
+
 
 ### Variáveis de Ambiente
 Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
 
-\`\`\`
+
 NEXT_PUBLIC_SUPABASE_URL=sua-url-do-supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-do-supabase
 SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico-do-supabase
-\`\`\`
+
 
 ## 🚀 Executando o Projeto
 
-\`\`\`bash
+bash
 # Desenvolvimento
 npm run dev
 # ou
