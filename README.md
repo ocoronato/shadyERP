@@ -2,7 +2,6 @@
 
 Um sistema completo de gerenciamento empresarial desenvolvido com Next.js e Supabase, oferecendo funcionalidades para controle de estoque, vendas, clientes, fornecedores, pedidos e finanças.
 
-![Sistema de Gerenciamento](/placeholder.svg?height=400&width=800&query=dashboard%20de%20sistema%20de%20gerenciamento%20empresarial)
 
 ## 🚀 Tecnologias Utilizadas
 
