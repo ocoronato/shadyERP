@@ -16,8 +16,24 @@ import {
   LucideBuilding,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import CadastroMenu from "./cadastro-menu"
-import FinanceiroMenu from "./financeiro-menu"
+
+// Adicionar lazy loading para os menus
+import dynamic from "next/dynamic"
+
+// Carregar os menus de forma lazy
+const CadastroMenu = dynamic(() => import("./cadastro-menu"), {
+  ssr: false,
+  loading: () => (
+    <div className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium">Cadastro...</div>
+  ),
+})
+
+const FinanceiroMenu = dynamic(() => import("./financeiro-menu"), {
+  ssr: false,
+  loading: () => (
+    <div className="text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium">Financeiro...</div>
+  ),
+})
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)

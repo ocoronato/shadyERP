@@ -1,42 +1,179 @@
-# ShadyERP
+# Sistema de Gerenciamento
 
-Um simples sistema de ERP para gerenciamento de negocios.
+Um sistema completo de gerenciamento empresarial desenvolvido com Next.js e Supabase, oferecendo funcionalidades para controle de estoque, vendas, clientes, fornecedores, pedidos e finanças.
 
-## Índice
+![Sistema de Gerenciamento](/placeholder.svg?height=400&width=800&query=dashboard%20de%20sistema%20de%20gerenciamento%20empresarial)
 
-1. [Descrição](#descrição)
-2. [Funcionalidades](#funcionalidades)
-3. [Instalação](#instalação)
-4. [Tecnologias](#tecnologias)
+## 🚀 Tecnologias Utilizadas
 
-## Descrição
+- **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL)
+- **Autenticação**: Supabase Auth
+- **UI Components**: shadcn/ui
+- **Gráficos**: Recharts
+- **Estilização**: TailwindCSS
 
-É um sistema de planejamento de recursos empresariais desenvolvido para gerenciar processos essenciais de uma empresa, como o controle de estoque, gestão de vendas e fazer pedidos. Este projeto saiu de uma ideia e foi criado com o objetivo de proporcionar uma solução acessível e fácil de usar para pequenas empresas.
+## ✨ Funcionalidades Principais
 
-## Funcionalidades
+### Dashboard
+- Visão geral de métricas importantes
+- Gráficos de vendas e margem de lucro
+- Resumo financeiro
 
--Gestão de Clientes: Cadastro, edição e exclusão de clientes.
+### Estoque
+- Cadastro e gerenciamento de produtos
+- Controle de estoque
+- Categorização de produtos
+- Gerenciamento de marcas
 
--Gestão de Produtos: Controle completo do catálogo de produtos, incluindo preços e estoque.
+### Vendas
+- Registro de vendas
+- Detalhamento de vendas
+- Relatórios de desempenho
 
--Relatórios e Dashboards: Insights e análises para decisões informadas.
+### Clientes
+- Cadastro e gerenciamento de clientes
+- Histórico de compras
+- Informações de contato
 
--Gestão de funcionarios: cargos e permissões.
+### Fornecedores
+- Cadastro e gerenciamento de fornecedores
+- Histórico de pedidos
+- Informações de contato
 
--Gestão de vendas
+### Pedidos
+- Criação e gerenciamento de pedidos
+- Acompanhamento de status
+- Previsão de entrega
 
-## Instalação
+### Financeiro
+- Contas a pagar
+- Contas a receber
+- Fluxo de caixa
 
-```
-git@github.com:ocoronato/shadyERP.git
-```
+### Usuários
+- Gerenciamento de usuários
+- Controle de acesso
+- Autenticação segura
 
-## Tecnologias
+## 🔧 Instalação e Configuração
 
-**Frontend**: 
+### Pré-requisitos
+- Node.js 18.x ou superior
+- npm ou yarn
+- Conta no Supabase
 
-**Estilização**: 
+### Configuração do Supabase
+1. Crie um projeto no [Supabase](https://supabase.com)
+2. Execute os scripts SQL fornecidos para criar as tabelas necessárias
+3. Configure as variáveis de ambiente com as credenciais do Supabase
 
-**Componentes**: 
+### Instalação
+\`\`\`bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/sistema-gerenciamento.git
 
-**Backend**: 
+# Entre no diretório do projeto
+cd sistema-gerenciamento
+
+# Instale as dependências
+npm install
+# ou
+yarn install
+
+# Configure as variáveis de ambiente
+cp .env.example .env.local
+\`\`\`
+
+### Variáveis de Ambiente
+Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
+
+\`\`\`
+NEXT_PUBLIC_SUPABASE_URL=sua-url-do-supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-do-supabase
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico-do-supabase
+\`\`\`
+
+## 🚀 Executando o Projeto
+
+\`\`\`bash
+# Desenvolvimento
+npm run dev
+# ou
+yarn dev
+
+# Produção
+npm run build
+npm start
+# ou
+yarn build
+yarn start
+\`\`\`
+
+Acesse `http://localhost:3000` no seu navegador.
+
+## 📁 Estrutura do Projeto
+
+\`\`\`
+sistema-gerenciamento/
+├── app/                    # Diretórios de páginas (App Router)
+│   ├── (protected)/        # Rotas protegidas por autenticação
+│   │   ├── categorias/     # Gerenciamento de categorias
+│   │   ├── clientes/       # Gerenciamento de clientes
+│   │   ├── dashboard/      # Dashboard principal
+│   │   ├── estoque/        # Gerenciamento de estoque
+│   │   ├── financeiro/     # Módulo financeiro
+│   │   ├── fornecedores/   # Gerenciamento de fornecedores
+│   │   ├── marcas/         # Gerenciamento de marcas
+│   │   ├── pedidos/        # Gerenciamento de pedidos
+│   │   ├── usuarios/       # Gerenciamento de usuários
+│   │   └── vendas/         # Gerenciamento de vendas
+│   ├── api/                # Rotas de API
+│   ├── login/              # Página de login
+│   └── layout.tsx          # Layout principal
+├── components/             # Componentes reutilizáveis
+│   ├── ui/                 # Componentes de UI (shadcn)
+│   └── ...                 # Outros componentes
+├── contexts/               # Contextos React
+├── lib/                    # Utilitários e funções
+│   ├── supabase.ts         # Cliente e funções do Supabase
+│   ├── utils.ts            # Funções utilitárias
+│   └── cache-utils.ts      # Utilitários de cache
+├── public/                 # Arquivos estáticos
+└── ...                     # Outros arquivos de configuração
+\`\`\`
+
+## 🗄️ Banco de Dados
+
+O sistema utiliza o PostgreSQL fornecido pelo Supabase. A estrutura do banco de dados inclui as seguintes tabelas principais:
+
+- `produtos`: Cadastro de produtos
+- `categorias`: Categorias de produtos
+- `marcas`: Marcas de produtos
+- `clientes`: Cadastro de clientes
+- `fornecedores`: Cadastro de fornecedores
+- `vendas`: Registro de vendas
+- `vendas_itens`: Itens de cada venda
+- `pedidos`: Pedidos a fornecedores
+- `pedidos_itens`: Itens de cada pedido
+- `contas_pagar`: Contas a pagar
+- `contas_receber`: Contas a receber
+- `usuarios`: Usuários do sistema
+
+## 🤝 Contribuição
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests.
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 📞 Suporte
+
+Para suporte, entre em contato através do email: seu-email@exemplo.com

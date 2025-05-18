@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js"
 import bcrypt from "bcryptjs"
 
+// Importar as funções de cache no topo do arquivo
+import { getCachedData, setCachedData, clearCache } from "./cache-utils"
+
 // Essas variáveis de ambiente já estão configuradas pelo Vercel
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
@@ -241,8 +244,15 @@ export async function checkTablesExist() {
 }
 
 // Funções para marcas
+// Modificar a função getMarcas para usar cache
 export async function getMarcas() {
   try {
+    // Verificar se há dados em cache
+    const cachedMarcas = getCachedData<Marca[]>("marcas")
+    if (cachedMarcas) {
+      return cachedMarcas
+    }
+
     const { data, error } = await supabase.from("marcas").select("*").order("nome", { ascending: true })
 
     if (error) {
@@ -250,6 +260,8 @@ export async function getMarcas() {
       return []
     }
 
+    // Armazenar em cache
+    setCachedData("marcas", data || [])
     return data || []
   } catch (error) {
     console.error("Erro ao buscar marcas:", error)
@@ -277,7 +289,12 @@ export async function addMarca(marca: Omit<Marca, "id">) {
       throw error
     }
 
-    return data?.[0]
+    const result = data?.[0]
+
+    // Invalidar cache após adicionar
+    invalidateCache("marcas")
+
+    return result
   } catch (error) {
     console.error("Erro ao adicionar marca:", error)
     throw error
@@ -422,8 +439,15 @@ export async function deleteCliente(id: number) {
 }
 
 // Funções para categorias
+// Modificar a função getCategorias para usar cache
 export async function getCategorias() {
   try {
+    // Verificar se há dados em cache
+    const cachedCategorias = getCachedData<Categoria[]>("categorias")
+    if (cachedCategorias) {
+      return cachedCategorias
+    }
+
     const { data, error } = await supabase.from("categorias").select("*").order("nome", { ascending: true })
 
     if (error) {
@@ -431,6 +455,8 @@ export async function getCategorias() {
       return []
     }
 
+    // Armazenar em cache
+    setCachedData("categorias", data || [])
     return data || []
   } catch (error) {
     console.error("Erro ao buscar categorias:", error)
@@ -503,15 +529,42 @@ export async function deleteCategoria(id: number) {
 }
 
 // Funções para produtos
-export async function getProdutos() {
+// Modificar a função getProdutos para incluir paginação e cache
+export async function getProdutos(options?: { page?: number; limit?: number; search?: string }) {
   try {
-    const { data, error } = await supabase.from("produtos").select("*").order("id", { ascending: true })
+    const cacheKey = `produtos_${JSON.stringify(options || {})}`
+    const cachedProdutos = getCachedData<Produto[]>(cacheKey)
+
+    if (cachedProdutos) {
+      return cachedProdutos
+    }
+
+    let query = supabase.from("produtos").select("*")
+
+    // Adicionar busca se fornecida
+    if (options?.search) {
+      query = query.or(`nome.ilike.%${options.search}%,categoria.ilike.%${options.search}%`)
+    }
+
+    // Adicionar ordenação
+    query = query.order("id", { ascending: true })
+
+    // Adicionar paginação se fornecida
+    if (options?.page && options?.limit) {
+      const from = (options.page - 1) * options.limit
+      const to = from + options.limit - 1
+      query = query.range(from, to)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error("Erro ao buscar produtos:", error)
       return []
     }
 
+    // Armazenar em cache
+    setCachedData(cacheKey, data || [])
     return data || []
   } catch (error) {
     console.error("Erro ao buscar produtos:", error)
@@ -1541,8 +1594,15 @@ export async function deleteContaReceber(id: number) {
 }
 
 // Funções para fornecedores
+// Modificar a função getFornecedores para usar cache
 export async function getFornecedores() {
   try {
+    // Verificar se há dados em cache
+    const cachedFornecedores = getCachedData<Fornecedor[]>("fornecedores")
+    if (cachedFornecedores) {
+      return cachedFornecedores
+    }
+
     const { data, error } = await supabase.from("fornecedores").select("*").order("razao_social", { ascending: true })
 
     if (error) {
@@ -1550,6 +1610,8 @@ export async function getFornecedores() {
       return []
     }
 
+    // Armazenar em cache
+    setCachedData("fornecedores", data || [])
     return data || []
   } catch (error) {
     console.error("Erro ao buscar fornecedores:", error)
@@ -1788,3 +1850,11 @@ export async function deletePedido(id: number) {
     throw error
   }
 }
+
+// Adicionar função para limpar o cache quando houver modificações
+export function invalidateCache(entity: string) {
+  clearCache(entity)
+}
+
+// Modificar as funções de adição/atualização/exclusão para invalidar o cache
+// Fazer o mesmo para updateMarca, deleteMarca, etc.

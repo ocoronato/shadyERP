@@ -12,7 +12,6 @@ import {
   LucideTrash,
   LucideRefreshCw,
   LucideDatabase,
-  LucideLoader2,
   LucidePackage,
   LucideRuler,
 } from "lucide-react"
@@ -20,6 +19,8 @@ import ProdutoForm from "./produto-form"
 import { getProdutos, deleteProduto, type Produto, checkTablesExist } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 import InitializeDatabase from "@/components/initialize-database"
+// Adicionar importação do componente de carregamento
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 export default function Estoque() {
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -37,6 +38,10 @@ export default function Estoque() {
     campo: "id",
     direcao: "asc",
   })
+
+  // Adicionar estados para paginação
+  const [paginaAtual, setPaginaAtual] = useState(1)
+  const [itensPorPagina, setItensPorPagina] = useState(10)
 
   // Adicionar função para calcular a margem de lucro
   const calcularMargem = (preco: number, custo: number) => {
@@ -121,6 +126,12 @@ export default function Estoque() {
     ),
   )
 
+  // Calcular o total de páginas
+  const totalPaginas = Math.ceil(produtosFiltrados.length / itensPorPagina)
+
+  // Obter apenas os produtos da página atual
+  const produtosPaginados = produtosFiltrados.slice((paginaAtual - 1) * itensPorPagina, paginaAtual * itensPorPagina)
+
   // Adicionar função para alternar ordenação
   const alternarOrdenacao = (campo: string) => {
     if (ordenacao.campo === campo) {
@@ -193,6 +204,7 @@ export default function Estoque() {
     })
   }
 
+  // Substituir o componente de carregamento
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -201,10 +213,7 @@ export default function Estoque() {
             <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Estoque</h1>
           </div>
           <Card className="p-6">
-            <div className="flex justify-center items-center h-32">
-              <LucideLoader2 className="h-8 w-8 text-blue-500 animate-spin mr-2" />
-              <p className="text-gray-500">Carregando produtos...</p>
-            </div>
+            <LoadingSpinner size="lg" text="Carregando produtos..." />
           </Card>
         </div>
       </div>
@@ -361,7 +370,7 @@ export default function Estoque() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {produtosFiltrados.map((produto) => (
+                {produtosPaginados.map((produto) => (
                   <tr key={produto.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{produto.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{produto.nome}</td>
@@ -421,6 +430,75 @@ export default function Estoque() {
             </table>
           </div>
         </Card>
+        {/* Adicionar controles de paginação após a tabela */}
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <Button
+              variant="outline"
+              onClick={() => setPaginaAtual(Math.max(1, paginaAtual - 1))}
+              disabled={paginaAtual === 1}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setPaginaAtual(Math.min(totalPaginas, paginaAtual + 1))}
+              disabled={paginaAtual === totalPaginas}
+            >
+              Próxima
+            </Button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Mostrando <span className="font-medium">{(paginaAtual - 1) * itensPorPagina + 1}</span> a{" "}
+                <span className="font-medium">{Math.min(paginaAtual * itensPorPagina, produtosFiltrados.length)}</span>{" "}
+                de <span className="font-medium">{produtosFiltrados.length}</span> resultados
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <Button
+                  variant="outline"
+                  className="rounded-l-md"
+                  onClick={() => setPaginaAtual(Math.max(1, paginaAtual - 1))}
+                  disabled={paginaAtual === 1}
+                >
+                  Anterior
+                </Button>
+                {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+                  const pageNumber =
+                    paginaAtual <= 3
+                      ? i + 1
+                      : paginaAtual >= totalPaginas - 2
+                        ? totalPaginas - 4 + i
+                        : paginaAtual - 2 + i
+
+                  if (pageNumber <= 0 || pageNumber > totalPaginas) return null
+
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={paginaAtual === pageNumber ? "default" : "outline"}
+                      onClick={() => setPaginaAtual(pageNumber)}
+                      className="px-4"
+                    >
+                      {pageNumber}
+                    </Button>
+                  )
+                })}
+                <Button
+                  variant="outline"
+                  className="rounded-r-md"
+                  onClick={() => setPaginaAtual(Math.min(totalPaginas, paginaAtual + 1))}
+                  disabled={paginaAtual === totalPaginas}
+                >
+                  Próxima
+                </Button>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
