@@ -70,10 +70,9 @@ Um sistema completo de gerenciamento empresarial desenvolvido com Next.js e Supa
 ### Instalação
 \`\`\`bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/sistema-gerenciamento.git
-
+git clone https://github.com/ocoronato/shadyERP.git
 # Entre no diretório do projeto
-cd sistema-gerenciamento
+cd shadyERP
 
 # Instale as dependências
 npm install
