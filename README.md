@@ -1,4 +1,4 @@
-# Sistema de Gerenciamento
+# ShadyERP
 
 Um sistema completo de gerenciamento empresarial desenvolvido com Next.js e Supabase, oferecendo funcionalidades para controle de estoque, vendas, clientes, fornecedores, pedidos e finanças.
 
