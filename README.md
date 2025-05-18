@@ -115,31 +115,56 @@ Acesse `http://localhost:3000` no seu navegador.
 
 
 sistema-gerenciamento/
-├── app/                    # Diretórios de páginas (App Router)
-│   ├── (protected)/        # Rotas protegidas por autenticação
-│   │   ├── categorias/     # Gerenciamento de categorias
-│   │   ├── clientes/       # Gerenciamento de clientes
-│   │   ├── dashboard/      # Dashboard principal
-│   │   ├── estoque/        # Gerenciamento de estoque
-│   │   ├── financeiro/     # Módulo financeiro
-│   │   ├── fornecedores/   # Gerenciamento de fornecedores
-│   │   ├── marcas/         # Gerenciamento de marcas
-│   │   ├── pedidos/        # Gerenciamento de pedidos
-│   │   ├── usuarios/       # Gerenciamento de usuários
-│   │   └── vendas/         # Gerenciamento de vendas
-│   ├── api/                # Rotas de API
-│   ├── login/              # Página de login
-│   └── layout.tsx          # Layout principal
-├── components/             # Componentes reutilizáveis
-│   ├── ui/                 # Componentes de UI (shadcn)
-│   └── ...                 # Outros componentes
-├── contexts/               # Contextos React
-├── lib/                    # Utilitários e funções
-│   ├── supabase.ts         # Cliente e funções do Supabase
-│   ├── utils.ts            # Funções utilitárias
-│   └── cache-utils.ts      # Utilitários de cache
-├── public/                 # Arquivos estáticos
-└── ...                     # Outros arquivos de configuração
+
+├── app/                   # Diretórios de páginas (App Router)
+
+│   ├── (protected)/       # Rotas protegidas por autenticação
+
+│   │   ├── categorias/    # Gerenciamento de categorias
+
+│   │   ├── clientes/      # Gerenciamento de clientes
+
+│   │   ├── dashboard/     # Dashboard principal
+
+│   │   ├── estoque/       # Gerenciamento de estoque
+
+│   │   ├── financeiro/    # Módulo financeiro
+
+│   │   ├── fornecedores/  # Gerenciamento de fornecedores
+
+│   │   ├── marcas/        # Gerenciamento de marcas
+
+│   │   ├── pedidos/       # Gerenciamento de pedidos
+
+│   │   ├── usuarios/      # Gerenciamento de usuários
+
+│   │   └── vendas/        # Gerenciamento de vendas
+
+│   ├── api/               # Rotas de API
+
+│   ├── login/             # Página de login
+
+│   └── layout.tsx         # Layout principal
+
+├── components/            # Componentes reutilizáveis
+
+│   ├── ui/                # Componentes de UI (shadcn)
+
+│   └── ...                # Outros componentes
+
+├── contexts/              # Contextos React
+
+├── lib/                   # Utilitários e funções
+
+│   ├── supabase.ts        # Cliente e funções do Supabase
+
+│   ├── utils.ts           # Funções utilitárias
+
+│   └── cache-utils.ts     # Utilitários de cache
+
+├── public/                # Arquivos estáticos
+
+└── ...                    # Outros arquivos de configuração
 
 ## 🗄️ Banco de Dados
 
