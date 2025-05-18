@@ -113,7 +113,7 @@ Acesse `http://localhost:3000` no seu navegador.
 
 ## 📁 Estrutura do Projeto
 
-\`\`\`
+
 sistema-gerenciamento/
 ├── app/                    # Diretórios de páginas (App Router)
 │   ├── (protected)/        # Rotas protegidas por autenticação
@@ -140,7 +140,6 @@ sistema-gerenciamento/
 │   └── cache-utils.ts      # Utilitários de cache
 ├── public/                 # Arquivos estáticos
 └── ...                     # Outros arquivos de configuração
-\`\`\`
 
 ## 🗄️ Banco de Dados
 
