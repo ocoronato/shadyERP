@@ -41,6 +41,11 @@ export function ImprimirEtiquetaButton({ produto, tamanho }: ImprimirEtiquetaBut
   const [imprimindo, setImprimindo] = useState(false)
 
   const handlePrint = () => {
+    if (produto.estoque <= 0) {
+      alert("Não há itens em estoque para imprimir etiquetas.")
+      return
+    }
+
     setImprimindo(true)
 
     // Criamos um iframe oculto para a impressão
@@ -57,9 +62,10 @@ export function ImprimirEtiquetaButton({ produto, tamanho }: ImprimirEtiquetaBut
       frameDoc.write(`
         <html>
           <head>
-            <title>Etiqueta - ${produto.nome}</title>
+            <title>Etiquetas - ${produto.nome}</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+              .etiquetas-container { display: flex; flex-wrap: wrap; }
               .etiqueta { width: 300px; height: 150px; border: 1px solid #ccc; padding: 10px; margin: 10px; }
               .etiqueta-conteudo { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
               .codigo { font-size: 16px; font-weight: bold; }
@@ -67,27 +73,38 @@ export function ImprimirEtiquetaButton({ produto, tamanho }: ImprimirEtiquetaBut
               .tipo { font-size: 16px; }
               .barcode { width: 100%; height: 40px; margin-top: 10px; }
               .barcode-text { text-align: center; font-size: 12px; margin-top: 5px; }
+              @media print {
+                .etiqueta { page-break-inside: avoid; }
+              }
             </style>
           </head>
           <body>
-            <div class="etiqueta">
-              <div class="etiqueta-conteudo">
-                <div class="codigo">#${produto.id}</div>
-                <div class="nome">${produto.nome}</div>
-                <div class="tipo">${produto.tipo_estoque === "unidade" ? "UN" : `TAM: ${tamanho || "N/A"}`}</div>
-                <div class="barcode">
-                  <svg width="100%" height="100%">
-                    <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                    ${Array.from({ length: 30 })
-                      .map(
-                        (_, i) =>
-                          `<rect x="${i * 3}" y="0" width="${Math.random() > 0.5 ? 2 : 1}" height="100%" fill="black" />`,
-                      )
-                      .join("")}
-                  </svg>
-                  <div class="barcode-text">P${produto.id}${produto.tipo_estoque === "par" ? `T${tamanho}` : ""}</div>
+            <div class="etiquetas-container">
+              ${Array.from({ length: produto.estoque })
+                .map(
+                  (_, index) => `
+                <div class="etiqueta">
+                  <div class="etiqueta-conteudo">
+                    <div class="codigo">#${produto.id}</div>
+                    <div class="nome">${produto.nome}</div>
+                    <div class="tipo">UN</div>
+                    <div class="barcode">
+                      <svg width="100%" height="100%">
+                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                        ${Array.from({ length: 30 })
+                          .map(
+                            (_, i) =>
+                              `<rect x="${i * 3}" y="0" width="${Math.random() > 0.5 ? 2 : 1}" height="100%" fill="black" />`,
+                          )
+                          .join("")}
+                      </svg>
+                      <div class="barcode-text">P${produto.id}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              `,
+                )
+                .join("")}
             </div>
           </body>
         </html>
@@ -109,7 +126,9 @@ export function ImprimirEtiquetaButton({ produto, tamanho }: ImprimirEtiquetaBut
   return (
     <Button variant="outline" size="sm" onClick={handlePrint} disabled={imprimindo} className="flex items-center gap-1">
       <LucidePrinter className="h-4 w-4" />
-      <span className="hidden sm:inline">{imprimindo ? "Imprimindo..." : "Imprimir Etiqueta"}</span>
+      <span className="hidden sm:inline">
+        {imprimindo ? "Imprimindo..." : `Imprimir ${produto.estoque} Etiqueta${produto.estoque !== 1 ? "s" : ""}`}
+      </span>
     </Button>
   )
 }

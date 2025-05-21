@@ -25,6 +25,14 @@ export function ProdutoEtiquetaTamanhos({ produto, estoqueTamanhos }: ProdutoEti
   const [dialogOpen, setDialogOpen] = useState(false)
   const [imprimindo, setImprimindo] = useState(false)
 
+  // Calcular o total de etiquetas a serem impressas
+  const calcularTotalEtiquetas = () => {
+    return tamanhosSelecionados.reduce((total, tamanho) => {
+      const estoqueTamanho = estoqueTamanhos.find((et) => et.tamanho === tamanho)
+      return total + (estoqueTamanho?.quantidade || 0)
+    }, 0)
+  }
+
   const toggleTamanho = (tamanho: number) => {
     if (tamanhosSelecionados.includes(tamanho)) {
       setTamanhosSelecionados(tamanhosSelecionados.filter((t) => t !== tamanho))
@@ -79,29 +87,36 @@ export function ProdutoEtiquetaTamanhos({ produto, estoqueTamanhos }: ProdutoEti
           <body>
             <div class="etiquetas-container">
               ${tamanhosSelecionados
-                .map(
-                  (tamanho) => `
-                <div class="etiqueta">
-                  <div class="etiqueta-conteudo">
-                    <div class="codigo">#${produto.id}</div>
-                    <div class="nome">${produto.nome}</div>
-                    <div class="tipo">TAM: ${tamanho}</div>
-                    <div class="barcode">
-                      <svg width="100%" height="100%">
-                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                        ${Array.from({ length: 30 })
-                          .map(
-                            (_, i) =>
-                              `<rect x="${i * 3}" y="0" width="${Math.random() > 0.5 ? 2 : 1}" height="100%" fill="black" />`,
-                          )
-                          .join("")}
-                      </svg>
-                      <div class="barcode-text">P${produto.id}T${tamanho}</div>
+                .map((tamanho) => {
+                  const estoqueTamanho = estoqueTamanhos.find((et) => et.tamanho === tamanho)
+                  const quantidade = estoqueTamanho?.quantidade || 0
+
+                  return Array.from({ length: quantidade })
+                    .map(
+                      (_, index) => `
+                    <div class="etiqueta">
+                      <div class="etiqueta-conteudo">
+                        <div class="codigo">#${produto.id}</div>
+                        <div class="nome">${produto.nome}</div>
+                        <div class="tipo">TAM: ${tamanho}</div>
+                        <div class="barcode">
+                          <svg width="100%" height="100%">
+                            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                            ${Array.from({ length: 30 })
+                              .map(
+                                (_, i) =>
+                                  `<rect x="${i * 3}" y="0" width="${Math.random() > 0.5 ? 2 : 1}" height="100%" fill="black" />`,
+                              )
+                              .join("")}
+                          </svg>
+                          <div class="barcode-text">P${produto.id}T${tamanho}</div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              `,
-                )
+                  `,
+                    )
+                    .join("")
+                })
                 .join("")}
             </div>
           </body>
@@ -121,6 +136,8 @@ export function ProdutoEtiquetaTamanhos({ produto, estoqueTamanhos }: ProdutoEti
       }, 500)
     }
   }
+
+  const totalEtiquetas = calcularTotalEtiquetas()
 
   return (
     <>
@@ -152,14 +169,19 @@ export function ProdutoEtiquetaTamanhos({ produto, estoqueTamanhos }: ProdutoEti
                     checked={tamanhosSelecionados.includes(et.tamanho)}
                     onCheckedChange={() => toggleTamanho(et.tamanho)}
                   />
-                  <Label htmlFor={`tamanho-${et.tamanho}`}>Tamanho {et.tamanho}</Label>
+                  <Label htmlFor={`tamanho-${et.tamanho}`}>
+                    Tamanho {et.tamanho} ({et.quantidade} un)
+                  </Label>
                 </div>
               ))}
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button onClick={handlePrint} disabled={tamanhosSelecionados.length === 0 || imprimindo}>
-              {imprimindo ? "Imprimindo..." : `Imprimir ${tamanhosSelecionados.length} etiqueta(s)`}
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              Total: {totalEtiquetas} etiqueta{totalEtiquetas !== 1 ? "s" : ""}
+            </div>
+            <Button onClick={handlePrint} disabled={totalEtiquetas === 0 || imprimindo}>
+              {imprimindo ? "Imprimindo..." : `Imprimir ${totalEtiquetas} etiqueta${totalEtiquetas !== 1 ? "s" : ""}`}
             </Button>
           </div>
         </DialogContent>
