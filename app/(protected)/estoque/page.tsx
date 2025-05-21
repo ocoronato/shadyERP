@@ -14,13 +14,16 @@ import {
   LucideDatabase,
   LucidePackage,
   LucideRuler,
+  LucidePrinter,
 } from "lucide-react"
 import ProdutoForm from "./produto-form"
-import { getProdutos, deleteProduto, type Produto, checkTablesExist } from "@/lib/supabase"
+import { getProdutos, deleteProduto, type Produto, checkTablesExist, getEstoqueTamanhos } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 import InitializeDatabase from "@/components/initialize-database"
 // Adicionar importação do componente de carregamento
 import { LoadingSpinner } from "@/components/loading-spinner"
+import { ImprimirEtiquetaButton } from "@/components/produto-etiqueta"
+import { ProdutoEtiquetaTamanhos } from "@/components/produto-etiqueta-tamanhos"
 
 export default function Estoque() {
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -42,6 +45,8 @@ export default function Estoque() {
   // Adicionar estados para paginação
   const [paginaAtual, setPaginaAtual] = useState(1)
   const [itensPorPagina, setItensPorPagina] = useState(10)
+
+  const [estoqueTamanhosPorProduto, setEstoqueTamanhosPorProduto] = useState<Record<number, any[]>>({})
 
   // Adicionar função para calcular a margem de lucro
   const calcularMargem = (preco: number, custo: number) => {
@@ -113,6 +118,20 @@ export default function Estoque() {
         return ordenacao.direcao === "asc" ? a.id - b.id : b.id - a.id
       }
     })
+  }
+
+  const carregarEstoqueTamanhos = async (produtoId: number) => {
+    try {
+      const tamanhos = await getEstoqueTamanhos(produtoId)
+      setEstoqueTamanhosPorProduto((prev) => ({
+        ...prev,
+        [produtoId]: tamanhos,
+      }))
+      return tamanhos
+    } catch (error) {
+      console.error("Erro ao carregar tamanhos:", error)
+      return []
+    }
   }
 
   // Modificar a função produtosFiltrados para incluir a ordenação
@@ -410,12 +429,51 @@ export default function Estoque() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Button variant="ghost" size="sm" onClick={() => editarProduto(produto)}>
-                        <LucideEdit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => excluirProduto(produto.id)}>
-                        <LucideTrash className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        {produto.tipo_estoque === "unidade" ? (
+                          <ImprimirEtiquetaButton produto={produto} />
+                        ) : (
+                          <>
+                            {/* Carregar tamanhos e mostrar o componente ProdutoEtiquetaTamanhos */}
+                            {estoqueTamanhosPorProduto[produto.id] ? (
+                              <ProdutoEtiquetaTamanhos
+                                produto={produto}
+                                estoqueTamanhos={estoqueTamanhosPorProduto[produto.id]}
+                              />
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-1"
+                                onClick={async () => {
+                                  const tamanhos = await carregarEstoqueTamanhos(produto.id)
+                                  if (tamanhos && tamanhos.length > 0) {
+                                    setEstoqueTamanhosPorProduto((prev) => ({
+                                      ...prev,
+                                      [produto.id]: tamanhos,
+                                    }))
+                                  } else {
+                                    toast({
+                                      title: "Sem tamanhos",
+                                      description: "Este produto não possui tamanhos cadastrados.",
+                                      variant: "destructive",
+                                    })
+                                  }
+                                }}
+                              >
+                                <LucidePrinter className="h-4 w-4" />
+                                <span className="hidden sm:inline">Imprimir Etiqueta</span>
+                              </Button>
+                            )}
+                          </>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => editarProduto(produto)}>
+                          <LucideEdit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => excluirProduto(produto.id)}>
+                          <LucideTrash className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

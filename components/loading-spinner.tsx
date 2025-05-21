@@ -19,3 +19,6 @@ export function LoadingSpinner({ size = "md", text = "Carregando..." }: LoadingS
     </div>
   )
 }
+
+// Também exportamos como default para compatibilidade
+export default LoadingSpinner
