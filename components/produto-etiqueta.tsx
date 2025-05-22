@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { LucidePrinter } from "lucide-react"
 import type { Produto } from "@/lib/supabase"
+import { generateBarcode } from "@/lib/barcode-utils"
 
 interface ProdutoEtiquetaProps {
   produto: Produto
@@ -11,6 +12,8 @@ interface ProdutoEtiquetaProps {
 }
 
 export const ProdutoEtiqueta = ({ produto, tamanho }: ProdutoEtiquetaProps) => {
+  const barcodeId = `P${produto.id}${produto.tipo_estoque === "par" ? `T${tamanho}` : ""}`
+
   return (
     <div className="p-4 w-[300px] h-[150px] border border-gray-300 m-2">
       <div className="flex flex-col items-center justify-center h-full">
@@ -18,14 +21,9 @@ export const ProdutoEtiqueta = ({ produto, tamanho }: ProdutoEtiquetaProps) => {
         <div className="text-xl font-bold text-center">{produto.nome}</div>
         <div className="text-lg">{produto.tipo_estoque === "unidade" ? "UN" : `TAM: ${tamanho || "N/A"}`}</div>
         <div className="mt-2">
-          {/* Código de barras simulado */}
-          <svg className="w-full h-[40px]">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {Array.from({ length: 30 }).map((_, i) => (
-              <rect key={i} x={i * 3} y="0" width={Math.random() > 0.5 ? 2 : 1} height="100%" fill="black" />
-            ))}
-          </svg>
-          <div className="text-center text-xs mt-1">{`P${produto.id}${produto.tipo_estoque === "par" ? `T${tamanho}` : ""}`}</div>
+          {/* Código de barras baseado no ID */}
+          <div dangerouslySetInnerHTML={{ __html: generateBarcode(produto.id, tamanho) }} className="w-full h-[40px]" />
+          <div className="text-center text-xs mt-1">{barcodeId}</div>
         </div>
       </div>
     </div>
@@ -89,17 +87,9 @@ export function ImprimirEtiquetaButton({ produto, tamanho }: ImprimirEtiquetaBut
                     <div class="nome">${produto.nome}</div>
                     <div class="tipo">UN</div>
                     <div class="barcode">
-                      <svg width="100%" height="100%">
-                        <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                        ${Array.from({ length: 30 })
-                          .map(
-                            (_, i) =>
-                              `<rect x="${i * 3}" y="0" width="${Math.random() > 0.5 ? 2 : 1}" height="100%" fill="black" />`,
-                          )
-                          .join("")}
-                      </svg>
-                      <div class="barcode-text">P${produto.id}</div>
+                      ${generateBarcode(produto.id)}
                     </div>
+                    <div class="barcode-text">P${produto.id}</div>
                   </div>
                 </div>
               `,

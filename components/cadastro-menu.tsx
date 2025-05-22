@@ -10,6 +10,7 @@ import {
   LucideBuilding,
   LucideShoppingBag,
   LucideBookmark,
+  LucideGrid,
 } from "lucide-react"
 
 export default function CadastroMenu() {
@@ -89,6 +90,14 @@ export default function CadastroMenu() {
             >
               <LucideShoppingBag className="mr-2 h-4 w-4" />
               Pedidos
+            </Link>
+            <Link
+              href="/grade"
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={() => setIsOpen(false)}
+            >
+              <LucideGrid className="mr-2 h-4 w-4" />
+              Grade
             </Link>
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   LucideArrowDownCircle,
   LucideArrowUpCircle,
   LucideBuilding,
+  LucideGrid,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -150,6 +151,14 @@ export default function Navbar() {
                 >
                   <LucidePackage className="inline-block h-4 w-4 mr-2" />
                   Estoque
+                </Link>
+                <Link
+                  href="/grade"
+                  className="text-white hover:bg-gray-800 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <LucideGrid className="inline-block h-4 w-4 mr-2" />
+                  Grade
                 </Link>
               </div>
 

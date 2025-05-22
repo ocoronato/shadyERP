@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { LucidePrinter } from "lucide-react"
 import type { Produto } from "@/lib/supabase"
+import { generateBarcode } from "@/lib/barcode-utils"
 
 interface EstoqueTamanho {
   id: number
@@ -100,17 +101,9 @@ export function ProdutoEtiquetaTamanhos({ produto, estoqueTamanhos }: ProdutoEti
                         <div class="nome">${produto.nome}</div>
                         <div class="tipo">TAM: ${tamanho}</div>
                         <div class="barcode">
-                          <svg width="100%" height="100%">
-                            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                            ${Array.from({ length: 30 })
-                              .map(
-                                (_, i) =>
-                                  `<rect x="${i * 3}" y="0" width="${Math.random() > 0.5 ? 2 : 1}" height="100%" fill="black" />`,
-                              )
-                              .join("")}
-                          </svg>
-                          <div class="barcode-text">P${produto.id}T${tamanho}</div>
+                          ${generateBarcode(produto.id, tamanho)}
                         </div>
+                        <div class="barcode-text">P${produto.id}T${tamanho}</div>
                       </div>
                     </div>
                   `,

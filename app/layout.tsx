@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Sistema de Gerenciamento",
+  title: "ShadyERP",
   description: "Sistema de gerenciamento para sua empresa",
     generator: 'v0.dev'
 }
