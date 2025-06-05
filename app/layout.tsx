@@ -5,9 +5,9 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.dev",
+  title: "Shady ERP",
+  description: "Criado por @ocoronato",
+  generator: "ocoronao",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
