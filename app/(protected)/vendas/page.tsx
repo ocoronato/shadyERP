@@ -121,14 +121,14 @@ export default function Vendas() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Vendas</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Vendas</h1>
           </div>
           <Card className="p-6">
             <div className="flex justify-center items-center h-32">
-              <p className="text-gray-500">Carregando vendas...</p>
+              <p className="text-gray-400">Carregando vendas...</p>
             </div>
           </Card>
         </div>
@@ -138,17 +138,17 @@ export default function Vendas() {
 
   if (needsInitialization || showInitialize) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Vendas</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Vendas</h1>
           </div>
           <Card className="p-6">
             <div className="flex flex-col justify-center items-center gap-4">
               <LucideDatabase className="h-12 w-12 text-blue-500 mb-2" />
-              <h2 className="text-xl font-medium">Inicialização do Banco de Dados</h2>
+              <h2 className="text-xl font-medium text-gray-100">Inicialização do Banco de Dados</h2>
               {error && <p className="text-red-500 text-center">{error}</p>}
-              <p className="text-gray-500 text-center mb-4">
+              <p className="text-gray-400 text-center mb-4">
                 É necessário criar as tabelas no banco de dados antes de usar o sistema.
               </p>
               <InitializeDatabase onSuccess={handleInitializeSuccess} />
@@ -161,10 +161,10 @@ export default function Vendas() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Vendas</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Vendas</h1>
             <Button onClick={() => setShowInitialize(true)}>
               <LucideDatabase className="h-4 w-4 mr-2" /> Inicializar Banco de Dados
             </Button>
@@ -183,10 +183,10 @@ export default function Vendas() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Vendas</h1>
+          <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Vendas</h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setShowInitialize(true)}>
               <LucideDatabase className="h-4 w-4 mr-2" /> Inicializar BD
@@ -224,7 +224,7 @@ export default function Vendas() {
                   placeholder="Buscar vendas..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-neutral-700 border-neutral-600 text-gray-100 placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -235,45 +235,45 @@ export default function Vendas() {
           <Card>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-neutral-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       Cliente
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       Data
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       Total
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
                       Ações
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-neutral-800 divide-y divide-neutral-700">
                   {vendasFiltradas.map((venda) => (
                     <tr key={venda.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{venda.id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{venda.cliente}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{venda.data}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">#{venda.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">{venda.cliente}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{venda.data}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         {formatarPreco(venda.total)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                             venda.status === "Concluída"
-                              ? "bg-green-100 text-green-800"
+                              ? "bg-green-900/60 text-green-300"
                               : venda.status === "Cancelada"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
+                                ? "bg-red-900/60 text-red-300"
+                                : "bg-yellow-900/60 text-yellow-300"
                           }`}
                         >
                           {venda.status}
@@ -291,7 +291,7 @@ export default function Vendas() {
                   ))}
                   {vendasFiltradas.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-400">
                         Nenhuma venda encontrada
                       </td>
                     </tr>

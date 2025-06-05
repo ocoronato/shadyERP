@@ -109,14 +109,14 @@ export default function Fornecedores() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8 text-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Fornecedores</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Fornecedores</h1>
           </div>
-          <Card className="p-6">
+          <Card className="p-6 bg-neutral-800">
             <div className="flex justify-center items-center h-32">
-              <p className="text-gray-500">Carregando fornecedores...</p>
+              <p className="text-gray-400">Carregando fornecedores...</p>
             </div>
           </Card>
         </div>
@@ -126,15 +126,15 @@ export default function Fornecedores() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8 text-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Fornecedores</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Fornecedores</h1>
           </div>
-          <Card className="p-6">
+          <Card className="p-6 bg-neutral-800">
             <div className="flex flex-col justify-center items-center h-32 gap-4">
-              <p className="text-red-500">{error}</p>
-              <Button onClick={carregarFornecedores}>
+              <p className="text-red-400">{error}</p>
+              <Button onClick={carregarFornecedores} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <LucideRefreshCw className="h-4 w-4 mr-2" /> Tentar novamente
               </Button>
             </div>
@@ -145,22 +145,23 @@ export default function Fornecedores() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8 text-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Gerenciamento de Fornecedores</h1>
+          <h1 className="text-2xl font-semibold text-gray-100">Gerenciamento de Fornecedores</h1>
           <Button
             onClick={() => {
               setFornecedorEditando(null)
               setMostrarForm(true)
             }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             <LucidePlus className="h-4 w-4 mr-2" /> Novo Fornecedor
           </Button>
         </div>
 
         {mostrarForm ? (
-          <Card className="p-6 mb-6">
+          <Card className="p-6 mb-6 bg-neutral-800 shadow-lg">
             <FornecedorForm
               fornecedor={fornecedorEditando}
               onSave={fornecedorEditando ? atualizarFornecedor : adicionarFornecedor}
@@ -171,7 +172,7 @@ export default function Fornecedores() {
             />
           </Card>
         ) : (
-          <Card className="p-6 mb-6">
+          <Card className="p-6 mb-6 bg-neutral-800 shadow-lg">
             <div className="flex items-center">
               <div className="relative flex-grow">
                 <LucideSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -180,69 +181,69 @@ export default function Fornecedores() {
                   placeholder="Buscar fornecedores..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-neutral-700 border-neutral-600 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             </div>
           </Card>
         )}
 
-        <Card>
+        <Card className="bg-neutral-800 shadow-lg">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-neutral-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     CNPJ
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Razão Social
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Nome Fantasia
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Inscrição Estadual
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Data de Nascimento
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-neutral-800 divide-y divide-neutral-700">
                 {fornecedoresFiltrados.map((fornecedor) => (
                   <tr key={fornecedor.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{fornecedor.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fornecedor.cnpj}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{fornecedor.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{fornecedor.cnpj}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">
                       {fornecedor.razao_social}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {fornecedor.nome_fantasia || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {fornecedor.inscricao_estadual_isento ? "ISENTO" : fornecedor.inscricao_estadual || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {formatarData(fornecedor.data_nascimento)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Button variant="ghost" size="sm" onClick={() => editarFornecedor(fornecedor)}>
-                        <LucideEdit className="h-4 w-4" />
+                        <LucideEdit className="h-4 w-4 text-gray-400 hover:text-indigo-400" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => excluirFornecedor(fornecedor.id)}>
-                        <LucideTrash className="h-4 w-4 text-red-500" />
+                        <LucideTrash className="h-4 w-4 text-red-500 hover:text-red-400" />
                       </Button>
                     </td>
                   </tr>
                 ))}
                 {fornecedoresFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-400">
                       Nenhum fornecedor encontrado
                     </td>
                   </tr>

@@ -170,14 +170,14 @@ export default function ContasPagar() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8 text-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Contas a Pagar</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Contas a Pagar</h1>
           </div>
-          <Card className="p-6">
+          <Card className="p-6 bg-neutral-800">
             <div className="flex justify-center items-center h-32">
-              <p className="text-gray-500">Carregando contas...</p>
+              <p className="text-gray-400">Carregando contas...</p>
             </div>
           </Card>
         </div>
@@ -187,15 +187,15 @@ export default function ContasPagar() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8 text-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Contas a Pagar</h1>
+            <h1 className="text-2xl font-semibold text-gray-100">Contas a Pagar</h1>
           </div>
-          <Card className="p-6">
+          <Card className="p-6 bg-neutral-800">
             <div className="flex flex-col justify-center items-center h-32 gap-4">
-              <p className="text-red-500">{error}</p>
-              <Button onClick={carregarDados}>
+              <p className="text-red-400">{error}</p>
+              <Button onClick={carregarDados} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <LucideRefreshCw className="h-4 w-4 mr-2" /> Tentar novamente
               </Button>
             </div>
@@ -206,22 +206,23 @@ export default function ContasPagar() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen py-8 text-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Contas a Pagar</h1>
+          <h1 className="text-2xl font-semibold text-gray-100">Contas a Pagar</h1>
           <Button
             onClick={() => {
               setContaEditando(null)
               setMostrarForm(true)
             }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             <LucidePlus className="h-4 w-4 mr-2" /> Nova Conta
           </Button>
         </div>
 
         {mostrarForm ? (
-          <Card className="p-6 mb-6">
+          <Card className="p-6 mb-6 bg-neutral-800 shadow-lg">
             <ContaPagarForm
               conta={contaEditando}
               onSave={contaEditando ? atualizarConta : adicionarConta}
@@ -232,7 +233,7 @@ export default function ContasPagar() {
             />
           </Card>
         ) : (
-          <Card className="p-6 mb-6">
+          <Card className="p-6 mb-6 bg-neutral-800 shadow-lg">
             <div className="flex flex-col space-y-4">
               <div className="flex items-center justify-between">
                 <div className="relative flex-grow">
@@ -245,26 +246,44 @@ export default function ContasPagar() {
                     placeholder="Buscar contas..."
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-neutral-700 border-neutral-600 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
-                <Button variant="outline" className="ml-2" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+                <Button
+                  variant="outline"
+                  className="ml-2 border-neutral-600 text-gray-300 hover:bg-neutral-700 hover:text-white"
+                  onClick={() => setMostrarFiltros(!mostrarFiltros)}
+                >
                   <LucideFilter className="h-4 w-4 mr-2" /> Filtros
                 </Button>
               </div>
 
               {mostrarFiltros && (
-                <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-md">
+                <div className="flex flex-col sm:flex-row gap-4 p-4 bg-neutral-700/50 rounded-md">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Data de Vencimento (Início)</label>
-                    <Input type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} />
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Data de Vencimento (Início)</label>
+                    <Input
+                      type="date"
+                      value={filtroDataInicio}
+                      onChange={(e) => setFiltroDataInicio(e.target.value)}
+                      className="bg-neutral-700 border-neutral-600 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Data de Vencimento (Fim)</label>
-                    <Input type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} />
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Data de Vencimento (Fim)</label>
+                    <Input
+                      type="date"
+                      value={filtroDataFim}
+                      onChange={(e) => setFiltroDataFim(e.target.value)}
+                      className="bg-neutral-700 border-neutral-600 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                   </div>
                   <div className="flex items-end">
-                    <Button variant="outline" onClick={limparFiltros}>
+                    <Button
+                      variant="outline"
+                      onClick={limparFiltros}
+                      className="border-neutral-600 text-gray-300 hover:bg-neutral-700 hover:text-white"
+                    >
                       Limpar Filtros
                     </Button>
                   </div>
@@ -274,49 +293,60 @@ export default function ContasPagar() {
           </Card>
         )}
 
-        <Card>
+        <Card className="bg-neutral-800 shadow-lg">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-neutral-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Descrição
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Fornecedor
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Valor
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Vencimento
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-neutral-800 divide-y divide-neutral-700">
                 {contasFiltradas.map((conta) => (
                   <tr
                     key={conta.id}
                     className={
-                      conta.status === "Pendente" && new Date(conta.data_vencimento) < new Date() ? "bg-red-50" : ""
+                      conta.status === "Pendente" && new Date(conta.data_vencimento) < new Date()
+                        ? "bg-red-800/30 hover:bg-red-700/40"
+                        : ""
                     }
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{conta.descricao}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-100">{conta.descricao}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {getNomeFornecedor(conta.fornecedor_id)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatarPreco(conta.valor)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatarPreco(conta.valor)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                       {formatarData(conta.data_vencimento)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <Badge variant={conta.status === "Pago" ? "success" : "warning"}>{conta.status}</Badge>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <Badge
+                        variant={conta.status === "Pago" ? "success" : "warning"}
+                        className={
+                          conta.status === "Pago"
+                            ? "bg-green-600/20 text-green-400 border border-green-600/30"
+                            : "bg-yellow-600/20 text-yellow-400 border border-yellow-600/30"
+                        }
+                      >
+                        {conta.status}
+                      </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {conta.status === "Pendente" && (
@@ -326,21 +356,21 @@ export default function ContasPagar() {
                           onClick={() => marcarComoPaga(conta)}
                           title="Marcar como paga"
                         >
-                          <LucideCheck className="h-4 w-4 text-green-500" />
+                          <LucideCheck className="h-4 w-4 text-green-500 hover:text-green-400" />
                         </Button>
                       )}
                       <Button variant="ghost" size="sm" onClick={() => editarConta(conta)}>
-                        <LucideEdit className="h-4 w-4" />
+                        <LucideEdit className="h-4 w-4 text-gray-400 hover:text-indigo-400" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => excluirConta(conta.id)}>
-                        <LucideTrash className="h-4 w-4 text-red-500" />
+                        <LucideTrash className="h-4 w-4 text-red-500 hover:text-red-400" />
                       </Button>
                     </td>
                   </tr>
                 ))}
                 {contasFiltradas.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-400">
                       Nenhuma conta encontrada
                     </td>
                   </tr>

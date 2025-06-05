@@ -85,10 +85,12 @@ export type Venda = {
   created_at?: string
 }
 
+// ATUALIZAR O TIPO Usuario PARA INCLUIR O CAMPO "user"
 export type Usuario = {
   id: number
   nome: string
   email: string
+  user?: string // Nome de usuário, opcional para usuários existentes, mas idealmente único
   cargo: string
   ativo: boolean
   created_at?: string
@@ -1300,6 +1302,33 @@ export async function getDashboardData() {
     // Ordenar por quantidade vendida (decrescente)
     produtosMaisVendidos.sort((a, b) => b.quantidade - a.quantidade)
 
+    // Novos Clientes (no mês atual)
+    const primeiroDiaMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), 1).toISOString().split("T")[0]
+    const ultimoDiaMes = new Date(dataAtual.getFullYear(), dataAtual.getMonth() + 1, 0).toISOString().split("T")[0]
+
+    const { count: novosClientesMes, error: errorNovosClientes } = await supabase
+      .from("clientes")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", primeiroDiaMes)
+      .lte("created_at", ultimoDiaMes)
+
+    if (errorNovosClientes) {
+      console.error("Erro ao buscar novos clientes do mês:", errorNovosClientes)
+      // Considere um tratamento de erro mais robusto ou um valor padrão
+    }
+
+    // Produtos em Baixo Estoque (ex: < 10 unidades)
+    const LIMITE_BAIXO_ESTOQUE = 10
+    const { count: produtosBaixoEstoqueCount, error: errorBaixoEstoque } = await supabase
+      .from("produtos")
+      .select("id", { count: "exact", head: true }) // Apenas o ID é necessário para contagem
+      .lt("estoque", LIMITE_BAIXO_ESTOQUE)
+
+    if (errorBaixoEstoque) {
+      console.error("Erro ao buscar produtos em baixo estoque:", errorBaixoEstoque)
+      // Considere um tratamento de erro mais robusto ou um valor padrão
+    }
+
     return {
       totalClientes: totalClientes || 0,
       totalProdutos: totalProdutos || 0,
@@ -1307,7 +1336,9 @@ export async function getDashboardData() {
       receitaMensal,
       vendasRecentes: vendasRecentes || [],
       produtosMaisVendidos: produtosMaisVendidos.slice(0, 5), // Top 5 produtos
-      dadosGrafico, // Adicionar dados para o gráfico
+      dadosGrafico,
+      novosClientesMes: novosClientesMes || 0, // Adicionado
+      produtosBaixoEstoqueCount: produtosBaixoEstoqueCount || 0, // Adicionado
     }
   } catch (error) {
     console.error("Erro ao buscar dados do dashboard:", error)
@@ -1316,11 +1347,12 @@ export async function getDashboardData() {
 }
 
 // Funções para usuários
+// ATUALIZAR getUsuarios PARA INCLUIR O CAMPO "user"
 export async function getUsuarios() {
   try {
     const { data, error } = await supabase
       .from("usuarios")
-      .select("id, nome, email, cargo, ativo, created_at")
+      .select("id, nome, email, user, cargo, ativo, created_at") // Adicionado "user"
       .order("id", { ascending: true })
 
     if (error) {
@@ -1335,8 +1367,48 @@ export async function getUsuarios() {
   }
 }
 
-export async function addUsuario(usuario: { nome: string; email: string; senha: string; cargo: string }) {
+// ATUALIZAR addUsuario PARA INCLUIR O CAMPO "user" E VERIFICAR UNICIDADE
+export async function addUsuario(usuario: {
+  nome: string
+  email: string
+  user?: string
+  senha: string
+  cargo: string
+}) {
   try {
+    // Verificar se o email já existe
+    const { data: existingEmail, error: emailCheckError } = await supabase
+      .from("usuarios")
+      .select("id")
+      .eq("email", usuario.email)
+      .single()
+
+    if (emailCheckError && emailCheckError.code !== "PGRST116") {
+      // PGRST116: "Query returned no rows" - o que é bom neste caso
+      console.error("Erro ao verificar email existente:", emailCheckError)
+      throw emailCheckError
+    }
+    if (existingEmail) {
+      throw new Error("Este email já está em uso.")
+    }
+
+    // Verificar se o nome de usuário (user) já existe, se fornecido
+    if (usuario.user) {
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from("usuarios")
+        .select("id")
+        .eq("user", usuario.user)
+        .single()
+
+      if (userCheckError && userCheckError.code !== "PGRST116") {
+        console.error("Erro ao verificar nome de usuário existente:", userCheckError)
+        throw userCheckError
+      }
+      if (existingUser) {
+        throw new Error("Este nome de usuário já está em uso.")
+      }
+    }
+
     // Hash da senha
     const salt = await bcrypt.genSalt(10)
     const senhaHash = await bcrypt.hash(usuario.senha, salt)
@@ -1347,28 +1419,34 @@ export async function addUsuario(usuario: { nome: string; email: string; senha: 
         {
           nome: usuario.nome,
           email: usuario.email,
+          user: usuario.user || null, // Salvar null se não fornecido
           senha: senhaHash,
           cargo: usuario.cargo,
           ativo: true,
         },
       ])
-      .select("id, nome, email, cargo, ativo, created_at")
+      .select("id, nome, email, user, cargo, ativo, created_at") // Adicionado "user"
 
     if (error) {
       console.error("Erro ao adicionar usuário:", error)
+      // Verificar se o erro é de unicidade do campo 'user' (se você adicionou a constraint no DB)
+      if (error.message.includes('duplicate key value violates unique constraint "usuarios_user_key"')) {
+        throw new Error("Este nome de usuário já está em uso.")
+      }
       throw error
     }
 
     return data?.[0]
   } catch (error) {
     console.error("Erro ao adicionar usuário:", error)
-    return []
+    throw error // Re-throw para ser pego pelo formulário
   }
 }
 
+// ATUALIZAR updateUsuario PARA INCLUIR O CAMPO "user" E VERIFICAR UNICIDADE
 export async function updateUsuario(
   id: number,
-  usuario: { nome?: string; email?: string; senha?: string; cargo?: string; ativo?: boolean },
+  usuario: { nome?: string; email?: string; user?: string; senha?: string; cargo?: string; ativo?: boolean },
 ) {
   try {
     const updateData: any = { ...usuario }
@@ -1377,23 +1455,64 @@ export async function updateUsuario(
     if (usuario.senha) {
       const salt = await bcrypt.genSalt(10)
       updateData.senha = await bcrypt.hash(usuario.senha, salt)
+    } else {
+      delete updateData.senha // Não atualizar a senha se não for fornecida
+    }
+
+    // Verificar se o email já existe para outro usuário
+    if (usuario.email) {
+      const { data: existingEmail, error: emailCheckError } = await supabase
+        .from("usuarios")
+        .select("id")
+        .eq("email", usuario.email)
+        .neq("id", id) // Excluir o usuário atual da verificação
+        .single()
+
+      if (emailCheckError && emailCheckError.code !== "PGRST116") {
+        console.error("Erro ao verificar email existente:", emailCheckError)
+        throw emailCheckError
+      }
+      if (existingEmail) {
+        throw new Error("Este email já está em uso por outro usuário.")
+      }
+    }
+
+    // Verificar se o nome de usuário (user) já existe para outro usuário, se fornecido
+    if (usuario.user) {
+      const { data: existingUser, error: userCheckError } = await supabase
+        .from("usuarios")
+        .select("id")
+        .eq("user", usuario.user)
+        .neq("id", id) // Excluir o usuário atual da verificação
+        .single()
+
+      if (userCheckError && userCheckError.code !== "PGRST116") {
+        console.error("Erro ao verificar nome de usuário existente:", userCheckError)
+        throw userCheckError
+      }
+      if (existingUser) {
+        throw new Error("Este nome de usuário já está em uso por outro usuário.")
+      }
     }
 
     const { data, error } = await supabase
       .from("usuarios")
       .update(updateData)
       .eq("id", id)
-      .select("id, nome, email, cargo, ativo, created_at")
+      .select("id, nome, email, user, cargo, ativo, created_at") // Adicionado "user"
 
     if (error) {
       console.error("Erro ao atualizar usuário:", error)
+      if (error.message.includes('duplicate key value violates unique constraint "usuarios_user_key"')) {
+        throw new Error("Este nome de usuário já está em uso.")
+      }
       throw error
     }
 
     return data?.[0]
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error)
-    throw error
+    throw error // Re-throw para ser pego pelo formulário
   }
 }
 
@@ -1413,37 +1532,50 @@ export async function deleteUsuario(id: number) {
   }
 }
 
-export async function loginUsuario(email: string, senha: string) {
+// ATUALIZAR loginUsuario PARA PERMITIR LOGIN COM "email" OU "user"
+export async function loginUsuario(identifier: string, senha: string) {
   try {
-    // Buscar o usuário pelo email
-    const { data, error } = await supabase.from("usuarios").select("*").eq("email", email).single()
+    // Buscar o usuário pelo email OU pelo nome de usuário (user)
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("*")
+      .or(`email.eq.${identifier},user.eq.${identifier}`) // Modificado para buscar por email OU user
+      .single() // Espera-se um único resultado
 
     if (error) {
+      // Se o erro for PGRST116, significa que nenhum usuário foi encontrado com o identificador
+      if (error.code === "PGRST116") {
+        throw new Error("Usuário não encontrado.")
+      }
       console.error("Erro ao buscar usuário:", error)
-      throw new Error("Usuário não encontrado")
+      throw new Error("Erro ao buscar usuário.") // Erro genérico para outros problemas
     }
 
     if (!data) {
-      throw new Error("Usuário não encontrado")
+      throw new Error("Usuário não encontrado.")
     }
 
     // Verificar se o usuário está ativo
     if (!data.ativo) {
-      throw new Error("Usuário inativo")
+      throw new Error("Usuário inativo.")
     }
 
-    // Verificar a senha - para o usuário felipe@sistema.com, aceitar a senha diretamente
+    // Verificar a senha
+    // Para o usuário felipe@sistema.com ou user "felipe", aceitar a senha diretamente
     let senhaCorreta = false
-
-    if (email === "felipe@sistema.com" && senha === "1305") {
+    if ((data.email === "felipe@sistema.com" || data.user === "felipe") && senha === "1305") {
       senhaCorreta = true
     } else {
       // Para outros usuários, verificar com bcrypt
+      // Certifique-se de que data.senha não é null ou undefined antes de passar para bcrypt.compare
+      if (!data.senha) {
+        throw new Error("Configuração de senha inválida para este usuário.")
+      }
       senhaCorreta = await bcrypt.compare(senha, data.senha)
     }
 
     if (!senhaCorreta) {
-      throw new Error("Senha incorreta")
+      throw new Error("Senha incorreta.")
     }
 
     // Retornar o usuário sem a senha
@@ -1451,7 +1583,7 @@ export async function loginUsuario(email: string, senha: string) {
     return usuarioSemSenha
   } catch (error) {
     console.error("Erro ao fazer login:", error)
-    throw error
+    throw error // Re-throw para ser pego pelo auth-context
   }
 }
 

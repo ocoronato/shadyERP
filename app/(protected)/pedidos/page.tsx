@@ -50,56 +50,56 @@ export default function PedidosPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-gray-200">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Pedidos</h1>
+        <h1 className="text-2xl font-bold text-gray-100">Pedidos</h1>
         <Link href="/pedidos/novo">
-          <Button>
+          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <LucidePlus className="mr-2 h-4 w-4" /> Novo Pedido
           </Button>
         </Link>
       </div>
 
-      <Card>
+      <Card className="bg-neutral-800 shadow-lg border-neutral-700">
         <CardHeader>
-          <CardTitle>Lista de Pedidos</CardTitle>
+          <CardTitle className="text-gray-100">Lista de Pedidos</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-300"></div>
             </div>
           ) : pedidos.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">Nenhum pedido encontrado.</p>
+              <p className="text-gray-400">Nenhum pedido encontrado.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b">
-                    <th className="py-2 px-4 text-left">ID</th>
-                    <th className="py-2 px-4 text-left">Marca</th>
-                    <th className="py-2 px-4 text-left">Fornecedor</th>
-                    <th className="py-2 px-4 text-left">Previsão de Entrega</th>
-                    <th className="py-2 px-4 text-left">Status</th>
-                    <th className="py-2 px-4 text-left">Ações</th>
+                  <tr className="border-b border-neutral-700">
+                    <th className="py-2 px-4 text-left text-gray-300">ID</th>
+                    <th className="py-2 px-4 text-left text-gray-300">Marca</th>
+                    <th className="py-2 px-4 text-left text-gray-300">Fornecedor</th>
+                    <th className="py-2 px-4 text-left text-gray-300">Previsão de Entrega</th>
+                    <th className="py-2 px-4 text-left text-gray-300">Status</th>
+                    <th className="py-2 px-4 text-left text-gray-300">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pedidos.map((pedido) => (
-                    <tr key={pedido.id} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-4">{pedido.id}</td>
-                      <td className="py-2 px-4">{pedido.marca || "-"}</td>
-                      <td className="py-2 px-4">{pedido.fornecedor_nome || "-"}</td>
-                      <td className="py-2 px-4">
+                    <tr key={pedido.id} className="border-b border-neutral-700 hover:bg-neutral-700/50">
+                      <td className="py-2 px-4 text-gray-300">{pedido.id}</td>
+                      <td className="py-2 px-4 text-gray-300">{pedido.marca || "-"}</td>
+                      <td className="py-2 px-4 text-gray-300">{pedido.fornecedor_nome || "-"}</td>
+                      <td className="py-2 px-4 text-gray-300">
                         {pedido.previsao_entrega ? new Date(pedido.previsao_entrega).toLocaleDateString("pt-BR") : "-"}
                       </td>
-                      <td className="py-2 px-4">
+                      <td className="py-2 px-4 text-gray-300">
                         <select
                           value={pedido.status}
                           onChange={(e) => handleStatusChange(pedido.id, e.target.value)}
-                          className="border rounded p-1"
+                          className="border rounded p-1 bg-neutral-700 border-neutral-600 text-white focus:ring-indigo-500 focus:border-indigo-500"
                         >
                           <option value="Pendente">Pendente</option>
                           <option value="Em Processamento">Em Processamento</option>
@@ -108,14 +108,23 @@ export default function PedidosPage() {
                           <option value="Cancelado">Cancelado</option>
                         </select>
                       </td>
-                      <td className="py-2 px-4">
+                      <td className="py-2 px-4 text-gray-300">
                         <div className="flex space-x-2">
                           <Link href={`/pedidos/${pedido.id}`}>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-neutral-600 text-gray-300 hover:bg-neutral-700 hover:text-white"
+                            >
                               <LucideEdit className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button variant="destructive" size="sm" onClick={() => handleDelete(pedido.id)}>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(pedido.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+                          >
                             <LucideTrash2 className="h-4 w-4" />
                           </Button>
                         </div>

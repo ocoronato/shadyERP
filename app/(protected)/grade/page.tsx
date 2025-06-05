@@ -157,18 +157,18 @@ export default function GradePage() {
   if (!tablesExist) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-white shadow-md rounded-lg p-6 max-w-lg mx-auto">
+        <div className="bg-neutral-800 shadow-lg rounded-lg p-6 max-w-lg mx-auto border border-neutral-700">
           <div className="text-center mb-6">
-            <LucideDatabase className="mx-auto h-12 w-12 text-gray-400" />
-            <h2 className="mt-2 text-xl font-semibold text-gray-900">Tabelas não encontradas</h2>
-            <p className="mt-1 text-gray-500">
+            <LucideDatabase className="mx-auto h-12 w-12 text-indigo-400" />
+            <h2 className="mt-2 text-xl font-semibold text-gray-100">Tabelas não encontradas</h2>
+            <p className="mt-1 text-gray-400">
               As tabelas necessárias para o gerenciamento de grade não foram encontradas no banco de dados.
             </p>
           </div>
           <div className="mt-5">
             <button
               onClick={initializeTables}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Inicializar Tabelas
             </button>
@@ -179,26 +179,26 @@ export default function GradePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 text-gray-200">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold flex items-center">
+        <h1 className="text-2xl font-bold flex items-center text-gray-100">
           <LucideGrid className="mr-2" /> Gerenciamento de Grade
         </h1>
         <button
           onClick={() => router.push(`/grade/${activeTab === "unidades" ? "unidade" : "tamanho"}/novo`)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center"
         >
           <LucidePlus className="mr-2" /> Novo {activeTab === "unidades" ? "Unidade" : "Tamanho"}
         </button>
       </div>
 
       <div className="mb-6">
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-neutral-700">
           <button
             className={`py-2 px-4 font-medium ${
               activeTab === "unidades"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-indigo-400 border-b-2 border-indigo-500"
+                : "text-gray-400 hover:text-gray-200"
             }`}
             onClick={() => setActiveTab("unidades")}
           >
@@ -207,8 +207,8 @@ export default function GradePage() {
           <button
             className={`py-2 px-4 font-medium ${
               activeTab === "tamanhos"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-indigo-400 border-b-2 border-indigo-500"
+                : "text-gray-400 hover:text-gray-200"
             }`}
             onClick={() => setActiveTab("tamanhos")}
           >
@@ -222,7 +222,7 @@ export default function GradePage() {
           <input
             type="text"
             placeholder={`Buscar ${activeTab === "unidades" ? "unidades" : "tamanhos"}...`}
-            className="w-full p-2 pl-10 border border-gray-300 rounded-md"
+            className="w-full p-2 pl-10 bg-neutral-700 border-neutral-600 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 rounded-md"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -231,35 +231,35 @@ export default function GradePage() {
       </div>
 
       {activeTab === "unidades" ? (
-        <div className="bg-white shadow-md rounded-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-neutral-800 shadow-lg rounded-md overflow-hidden border border-neutral-700">
+          <table className="min-w-full divide-y divide-neutral-700">
+            <thead className="bg-neutral-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nome</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Sigla
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-neutral-800 divide-y divide-neutral-700">
               {filteredUnidades.length > 0 ? (
                 filteredUnidades.map((unidade) => (
-                  <tr key={unidade.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{unidade.nome}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{unidade.sigla}</td>
+                  <tr key={unidade.id} className="hover:bg-neutral-700/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{unidade.nome}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{unidade.sigla}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => router.push(`/grade/unidade/${unidade.id}`)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        className="text-indigo-400 hover:text-indigo-300 mr-4"
                       >
                         <LucideEdit size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(unidade.id, "unidade")}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-500 hover:text-red-400"
                       >
                         <LucideTrash size={18} />
                       </button>
@@ -268,7 +268,7 @@ export default function GradePage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={3} className="px-6 py-4 text-center text-gray-400">
                     Nenhuma unidade encontrada
                   </td>
                 </tr>
@@ -277,35 +277,35 @@ export default function GradePage() {
           </table>
         </div>
       ) : (
-        <div className="bg-white shadow-md rounded-md overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-neutral-800 shadow-lg rounded-md overflow-hidden border border-neutral-700">
+          <table className="min-w-full divide-y divide-neutral-700">
+            <thead className="bg-neutral-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Nome</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Ordem
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-neutral-800 divide-y divide-neutral-700">
               {filteredTamanhos.length > 0 ? (
                 filteredTamanhos.map((tamanho) => (
-                  <tr key={tamanho.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">{tamanho.nome}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{tamanho.ordem}</td>
+                  <tr key={tamanho.id} className="hover:bg-neutral-700/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{tamanho.nome}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">{tamanho.ordem}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => router.push(`/grade/tamanho/${tamanho.id}`)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        className="text-indigo-400 hover:text-indigo-300 mr-4"
                       >
                         <LucideEdit size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(tamanho.id, "tamanho")}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-500 hover:text-red-400"
                       >
                         <LucideTrash size={18} />
                       </button>
@@ -314,7 +314,7 @@ export default function GradePage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={3} className="px-6 py-4 text-center text-gray-400">
                     Nenhum tamanho encontrado
                   </td>
                 </tr>
